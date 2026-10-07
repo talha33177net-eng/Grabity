@@ -1,0 +1,57 @@
+@* Account, newsletter and staff emails: a heading, a few paragraphs, optional lists and one button. *@
+<EmailLayout Store="Store" Model="Model">
+    <EmailHero Store="Store" Emoji="@Model.Emoji" Title="@Model.Title" Intro="@Model.Intro" />
+    @if (Model.Bullets.Count > 0)
+    {
+        <EmailSection Top="16">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                @foreach (var bullet in Model.Bullets)
+                {
+                    <tr>
+                        <td width="28" valign="top" style="width:28px;padding:5px 0;@Css.Text(15, 22, 800, Store.Theme.BrandStrong)">✓</td>
+                        <td valign="top" style="padding:5px 0;@Css.Text(15, 22)">@bullet</td>
+                    </tr>
+                }
+            </table>
+        </EmailSection>
+    }
+    @if (Model.Paragraphs.Count > 0)
+    {
+        <EmailSection Top="14">
+            @foreach (var paragraph in Model.Paragraphs)
+            {
+                <p style="margin:0 0 10px;@Css.Text(15, 25)">@paragraph</p>
+            }
+        </EmailSection>
+    }
+    <EmailFacts Items="Model.Facts" />
+    @if (Model.Rows.Count > 0)
+    {
+        <EmailRows Store="Store" Rows="Model.Rows" />
+    }
+    <EmailCallouts Store="Store" Items="Model.Callouts" />
+    @if (Model.Button is { } button)
+    {
+        <EmailSection Top="26">
+            <EmailButton Store="Store" Link="button" />
+            @if (Model.LinkFallback is { } fallback)
+            {
+                <p style="margin:16px 0 0;@Css.Text(12, 18, 400, EmailTheme.Muted)">
+                    If the button doesn't work, copy this link into your browser:<br />
+                    <a href="@fallback" target="_blank" style="color:@Store.Theme.BrandStrong;word-break:break-all;">@fallback</a>
+                </p>
+            }
+        </EmailSection>
+    }
+    @if (Model.FinePrint is { } finePrint)
+    {
+        <EmailSection Top="22">
+            <p style="margin:0;@Css.Text(13, 20, 400, EmailTheme.Muted)">@finePrint</p>
+        </EmailSection>
+    }
+</EmailLayout>
+
+@code {
+    [Parameter] public EmailStore Store { get; set; } = default!;
+    [Parameter] public MessageEmailModel Model { get; set; } = default!;
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 290" width="640" height="290"><defs><linearGradient id="bg154" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient></defs>
+<rect width="640" height="290" fill="url(#bg154)"/>
+<circle cx="499.20000000000005" cy="58" r="159.5" fill="#fff" opacity=".07"/>
+<circle cx="608" cy="275.5" r="116" fill="#fff" opacity=".06"/>
+<circle cx="32" cy="304.5" r="87" fill="#fff" opacity=".05"/>
+<g transform="translate(400 15) scale(0.33)"><defs><linearGradient id="g155" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e8edf3"/></linearGradient></defs><ellipse cx="400" cy="680" rx="200" ry="22" fill="#0f172a" opacity=".10"/>
+<rect x="300" y="110" width="26" height="110" rx="8" fill="#94a3b8"/><rect x="474" y="110" width="26" height="110" rx="8" fill="#94a3b8"/>
+<rect x="230" y="200" width="340" height="420" rx="70" fill="url(#g155)"/>
+<rect x="246" y="216" width="308" height="388" rx="58" fill="none" stroke="#fff" stroke-width="3" opacity=".35"/>
+<rect x="350" y="470" width="100" height="26" rx="13" fill="#94a3b8"/><rect x="350" y="520" width="100" height="26" rx="13" fill="#94a3b8"/>
+<text x="400" y="380" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="58" font-weight="800" fill="#94a3b8" text-anchor="middle" opacity=".85">65W</text></g>
+<text x="45" y="58" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,.82)" text-anchor="start">GaN CHARGERS</text>
+<text x="45" y="101.1" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="38" font-weight="800" fill="#ffffff" text-anchor="start">Charge 3x</text><text x="45" y="142.14" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="38" font-weight="800" fill="#ffffff" text-anchor="start">faster</text>
+<text x="45" y="171.14" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="15" fill="rgba(255,255,255,.82)" text-anchor="start">65W · Multi-port</text>
+</svg>

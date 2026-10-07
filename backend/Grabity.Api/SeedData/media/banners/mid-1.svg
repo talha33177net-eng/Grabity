@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="960" height="320"><defs><linearGradient id="bg156" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#064e3b"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+<rect width="960" height="320" fill="url(#bg156)"/>
+<circle cx="748.8000000000001" cy="64" r="176" fill="#fff" opacity=".07"/>
+<circle cx="912" cy="304" r="128" fill="#fff" opacity=".06"/>
+<circle cx="48" cy="336" r="96" fill="#fff" opacity=".05"/>
+<g transform="translate(620 -40) scale(0.5)"><defs><linearGradient id="g157" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#16a34a"/><stop offset="1" stop-color="#14532d"/></linearGradient><linearGradient id="g158" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#16a34a"/></linearGradient><linearGradient id="g159" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1020"/><stop offset="1" stop-color="#1e293b"/></linearGradient><linearGradient id="w160" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#14532d"/></linearGradient></defs>
+<ellipse cx="410" cy="715" rx="250" ry="24" fill="#0f172a" opacity=".10"/>
+<g transform="rotate(9 520 400)">
+  <rect x="392" y="96" width="250" height="540" rx="46" fill="url(#g157)"/>
+  <rect x="400" y="104" width="234" height="524" rx="40" fill="url(#g158)" opacity=".55"/>
+  <rect x="418" y="128" width="128" height="138" rx="34" fill="#14532d" opacity=".85"/>
+  <circle cx="452" cy="164" r="22" fill="#0b1020"/><circle cx="452" cy="164" r="12" fill="#1e3a5f"/>
+  <circle cx="510" cy="164" r="22" fill="#0b1020"/><circle cx="510" cy="164" r="12" fill="#1e3a5f"/>
+  <circle cx="452" cy="226" r="22" fill="#0b1020"/><circle cx="452" cy="226" r="12" fill="#1e3a5f"/>
+  <circle cx="510" cy="226" r="7" fill="#fde68a"/>
+</g>
+<rect x="196" y="130" width="250" height="540" rx="46" fill="url(#g157)"/>
+<rect x="206" y="140" width="230" height="520" rx="38" fill="url(#g159)"/>
+<rect x="216" y="150" width="210" height="500" rx="32" fill="url(#w160)" opacity=".9"/>
+<circle cx="250" cy="560" r="120" fill="#fff" opacity=".10"/><circle cx="400" cy="250" r="90" fill="#fff" opacity=".10"/>
+<rect x="290" y="166" width="62" height="18" rx="9" fill="#0b1020"/>
+<text x="321" y="300" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="54" font-weight="300" fill="#fff" text-anchor="middle">10:08</text>
+<text x="321" y="330" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="15" fill="#fff" opacity=".85" text-anchor="middle">Thursday, 8 October</text>
+<path d="M214 170 Q230 150 260 152" stroke="#fff" stroke-width="3" opacity=".25" fill="none"/></g>
+<text x="67" y="64" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,.82)" text-anchor="start">EXCHANGE OFFER</text>
+<text x="67" y="134" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="42" font-weight="800" fill="#ffffff" text-anchor="start">Old phone? New deal.</text>
+<text x="67" y="166" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="16" fill="rgba(255,255,255,.82)" text-anchor="start">Bring your old device to our store and save more.</text>
+<rect x="67" y="188" width="109" height="32" rx="16" fill="#ffffff"/>
+<text x="121.5" y="208.48" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="13" font-weight="700" fill="#059669" text-anchor="middle">Learn More</text></svg>

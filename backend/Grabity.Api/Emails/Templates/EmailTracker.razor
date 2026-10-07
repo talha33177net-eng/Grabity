@@ -1,0 +1,30 @@
+@* Order progress bar: Placed → Confirmed → Shipped → Delivered. *@
+@if (Step is int step)
+{
+    <EmailSection Top="26">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+                @for (var i = 0; i < Labels.Length; i++)
+                {
+                    var done = i <= step;
+                    var current = i == step;
+                    <td width="25%" valign="top" style="width:25%;padding-right:@(i < Labels.Length - 1 ? 6 : 0)px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                                <td height="6" style="height:6px;line-height:6px;font-size:0;border-radius:3px;background-color:@(done ? Store.Theme.Brand : EmailTheme.Line);">&nbsp;</td>
+                            </tr>
+                        </table>
+                        <p style="margin:8px 0 0;@Css.Text(12, 16, current ? 700 : 500, current ? Store.Theme.BrandStrong : done ? EmailTheme.Body : EmailTheme.Faint)">@(done ? $"✓ {Labels[i]}" : Labels[i])</p>
+                    </td>
+                }
+            </tr>
+        </table>
+    </EmailSection>
+}
+
+@code {
+    private static readonly string[] Labels = ["Placed", "Confirmed", "Shipped", "Delivered"];
+
+    [Parameter] public EmailStore Store { get; set; } = default!;
+    [Parameter] public int? Step { get; set; }
+}

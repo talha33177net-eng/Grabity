@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 600" width="1280" height="600"><defs><linearGradient id="bg146" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#881337"/><stop offset="1" stop-color="#f43f5e"/></linearGradient></defs>
+<rect width="1280" height="600" fill="url(#bg146)"/>
+<circle cx="998.4000000000001" cy="120" r="330" fill="#fff" opacity=".07"/>
+<circle cx="1216" cy="570" r="240" fill="#fff" opacity=".06"/>
+<circle cx="64" cy="630" r="180" fill="#fff" opacity=".05"/>
+<g transform="translate(700 30) scale(0.66)"><defs><linearGradient id="g147" x1="0" y1="0" x2="0.2" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e8edf3"/></linearGradient><linearGradient id="b148" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e8edf3"/></linearGradient></defs><ellipse cx="400" cy="680" rx="250" ry="26" fill="#0f172a" opacity=".10"/>
+<rect x="230" y="300" width="340" height="300" rx="120" fill="url(#g147)"/>
+<path d="M232 410 H568" stroke="#94a3b8" stroke-width="5" opacity=".35"/>
+<rect x="380" y="470" width="40" height="10" rx="5" fill="#22c55e"/>
+<path d="M300 300 Q400 270 500 300" stroke="#fff" stroke-width="6" opacity=".35" fill="none"/>
+<g transform="translate(160 150) rotate(-18)"><ellipse cx="70" cy="70" rx="62" ry="58" fill="url(#b148)"/><circle cx="56" cy="60" r="26" fill="#94a3b8" opacity=".85"/><rect x="92" y="80" width="36" height="150" rx="18" fill="url(#b148)"/></g>
+<g transform="translate(470 120) rotate(16)"><ellipse cx="70" cy="70" rx="62" ry="58" fill="url(#b148)"/><circle cx="84" cy="60" r="26" fill="#94a3b8" opacity=".85"/><rect x="12" y="80" width="36" height="150" rx="18" fill="url(#b148)"/></g></g>
+<text x="90" y="120" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,.82)" text-anchor="start">MEGA AUDIO FEST</text>
+<text x="90" y="209.1" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="78" font-weight="800" fill="#ffffff" text-anchor="start">Up to 35% off</text><text x="90" y="293.34000000000003" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="78" font-weight="800" fill="#ffffff" text-anchor="start">Earbuds</text>
+<text x="90" y="353.34000000000003" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="30" fill="rgba(255,255,255,.82)" text-anchor="start">ANC earbuds, headphones and speakers from top brands.</text>
+<rect x="90" y="395.34000000000003" width="257" height="60" rx="30" fill="#ffffff"/>
+<text x="218.5" y="433.74" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="25" font-weight="700" fill="#be123c" text-anchor="middle">Grab the Deal</text></svg>

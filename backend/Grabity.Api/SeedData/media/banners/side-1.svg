@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 290" width="640" height="290"><defs><linearGradient id="bg151" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>
+<rect width="640" height="290" fill="url(#bg151)"/>
+<circle cx="499.20000000000005" cy="58" r="159.5" fill="#fff" opacity=".07"/>
+<circle cx="608" cy="275.5" r="116" fill="#fff" opacity=".06"/>
+<circle cx="32" cy="304.5" r="87" fill="#fff" opacity=".05"/>
+<g transform="translate(390 10) scale(0.34)"><defs><linearGradient id="g152" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#374151"/><stop offset="1" stop-color="#111827"/></linearGradient><linearGradient id="s153" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1020"/><stop offset="1" stop-color="#111827"/></linearGradient></defs><ellipse cx="400" cy="720" rx="160" ry="20" fill="#0f172a" opacity=".10"/>
+<rect x="320" y="80" width="160" height="200" rx="40" fill="url(#g152)"/><rect x="320" y="520" width="160" height="200" rx="40" fill="url(#g152)"/>
+<rect x="280" y="230" width="240" height="320" rx="64" fill="#6b7280"/>
+<rect x="292" y="242" width="216" height="296" rx="54" fill="url(#s153)"/>
+<rect x="520" y="320" width="16" height="60" rx="8" fill="#374151"/>
+<circle cx="400" cy="400" r="80" fill="none" stroke="#f43f5e" stroke-width="14" stroke-dasharray="380 600" transform="rotate(-90 400 400)"/>
+<circle cx="400" cy="400" r="60" fill="none" stroke="#22c55e" stroke-width="14" stroke-dasharray="250 600" transform="rotate(-90 400 400)"/>
+<circle cx="400" cy="400" r="40" fill="none" stroke="#38bdf8" stroke-width="14" stroke-dasharray="160 600" transform="rotate(-90 400 400)"/>
+<text x="400" y="292" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="26" font-weight="600" fill="#fff" text-anchor="middle">10:08</text></g>
+<text x="45" y="58" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="3" fill="#334155" text-anchor="start">SMART WATCHES</text>
+<text x="45" y="101.1" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="38" font-weight="800" fill="#0f172a" text-anchor="start">Your time,</text><text x="45" y="142.14" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="38" font-weight="800" fill="#0f172a" text-anchor="start">upgraded</text>
+<text x="45" y="171.14" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="15" fill="#334155" text-anchor="start">From ৳2,990</text>
+</svg>

@@ -1,0 +1,73 @@
+@* Order emails for customers (received, confirmed, shipped, delivered, payments...) and the new-order alert for staff. *@
+<EmailLayout Store="Store" Model="Model">
+    <EmailHero Store="Store" Emoji="@Model.Emoji" Title="@Model.Title" Intro="@Model.Intro" />
+    <EmailTracker Store="Store" Step="Model.TrackerStep" />
+    <EmailFacts Items="Model.Facts" />
+    <EmailCallouts Store="Store" Items="Model.Callouts" />
+    @if (Model.Button is { } button)
+    {
+        <EmailSection Top="26">
+            <EmailButton Store="Store" Link="button" />
+        </EmailSection>
+    }
+    @if (Model.Lines.Count > 0)
+    {
+        <EmailItems Store="Store" Lines="Model.Lines" Totals="Model.Totals" />
+    }
+    @if (Model.ShowAddress)
+    {
+        <EmailSection Top="26">
+            <div style="display:inline-block;width:100%;max-width:250px;vertical-align:top;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td style="padding:0 6px 12px 0;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid @EmailTheme.Line;border-radius:14px;">
+                                <tr>
+                                    <td style="padding:16px 18px;">
+                                        <p style="margin:0 0 6px;@Css.Text(11, 16, 700, EmailTheme.Faint)text-transform:uppercase;letter-spacing:0.6px;">Delivery</p>
+                                        <p style="margin:0;@Css.Text(14, 21, 700, EmailTheme.Ink)">@Model.CustomerName</p>
+                                        <p style="margin:2px 0 0;@Css.Text(14, 21)">@Model.Phone</p>
+                                        <p style="margin:2px 0 0;@Css.Text(14, 21)">@Model.Address</p>
+                                        <p style="margin:8px 0 0;@Css.Text(13, 19, 600, EmailTheme.Muted)">@Model.Delivery</p>
+                                        @if (Model.CustomerNote is { } note)
+                                        {
+                                            <p style="margin:8px 0 0;font-style:italic;@Css.Text(13, 19, 400, EmailTheme.Muted)">@($"“{note}”")</p>
+                                        }
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div style="display:inline-block;width:100%;max-width:250px;vertical-align:top;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td style="padding:0 0 12px 6px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid @EmailTheme.Line;border-radius:14px;">
+                                <tr>
+                                    <td style="padding:16px 18px;">
+                                        <p style="margin:0 0 6px;@Css.Text(11, 16, 700, EmailTheme.Faint)text-transform:uppercase;letter-spacing:0.6px;">Payment</p>
+                                        <p style="margin:0;@Css.Text(14, 21, 700, EmailTheme.Ink)">@Model.PaymentMethod</p>
+                                        <p style="margin:2px 0 0;@Css.Text(14, 21)">@Model.PaymentStatus</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </EmailSection>
+    }
+    @if (Model.Outro is { } outro)
+    {
+        <EmailSection Top="22">
+            <p style="margin:0;@Css.Text(14, 22, 400, EmailTheme.Muted)">@outro</p>
+        </EmailSection>
+    }
+</EmailLayout>
+
+@code {
+    [Parameter] public EmailStore Store { get; set; } = default!;
+    [Parameter] public OrderEmailModel Model { get; set; } = default!;
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630"><defs><linearGradient id="c15" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c2d12"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs><rect width="1200" height="630" fill="url(#c15)"/>
+<circle cx="980" cy="120" r="260" fill="#fff" opacity=".08"/><circle cx="180" cy="620" r="220" fill="#fff" opacity=".06"/>
+<g transform="translate(330 20) scale(.75)"><defs><linearGradient id="g168" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e3a8a"/><stop offset="1" stop-color="#0f172a"/></linearGradient><linearGradient id="s169" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1020"/><stop offset="1" stop-color="#111827"/></linearGradient></defs><ellipse cx="400" cy="720" rx="160" ry="20" fill="#0f172a" opacity=".10"/>
+<rect x="320" y="80" width="160" height="200" rx="40" fill="url(#g168)"/><rect x="320" y="520" width="160" height="200" rx="40" fill="url(#g168)"/>
+<rect x="280" y="230" width="240" height="320" rx="64" fill="#3b82f6"/>
+<rect x="292" y="242" width="216" height="296" rx="54" fill="url(#s169)"/>
+<rect x="520" y="320" width="16" height="60" rx="8" fill="#1e3a8a"/>
+<circle cx="400" cy="400" r="80" fill="none" stroke="#f43f5e" stroke-width="14" stroke-dasharray="380 600" transform="rotate(-90 400 400)"/>
+<circle cx="400" cy="400" r="60" fill="none" stroke="#22c55e" stroke-width="14" stroke-dasharray="250 600" transform="rotate(-90 400 400)"/>
+<circle cx="400" cy="400" r="40" fill="none" stroke="#38bdf8" stroke-width="14" stroke-dasharray="160 600" transform="rotate(-90 400 400)"/>
+<text x="400" y="292" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="26" font-weight="600" fill="#fff" text-anchor="middle">10:08</text></g></svg>

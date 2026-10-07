@@ -1,0 +1,32 @@
+@* Label/value pairs in two columns that stack on narrow screens (inline-block cells, no media queries needed). *@
+@if (Items.Count > 0)
+{
+    <EmailSection Top="22">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:@EmailTheme.Panel;border:1px solid @EmailTheme.Line;border-radius:14px;">
+            <tr>
+                <td style="padding:8px 10px;">
+                    @foreach (var fact in Items)
+                    {
+                        <div style="display:inline-block;width:100%;max-width:240px;vertical-align:top;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td style="padding:9px 10px;">
+                                        <p style="margin:0;@Css.Text(11, 16, 700, EmailTheme.Faint)text-transform:uppercase;letter-spacing:0.6px;">@fact.Label</p>
+                                        <p style="@(fact.Mono ? MonoValue : Value)">@fact.Value</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    }
+                </td>
+            </tr>
+        </table>
+    </EmailSection>
+}
+
+@code {
+    private static readonly string Value = "margin:3px 0 0;word-break:break-word;" + Css.Text(15, 21, 600, EmailTheme.Ink);
+    private static readonly string MonoValue = Value + "font-family:Consolas,Menlo,monospace;";
+
+    [Parameter] public List<EmailFact> Items { get; set; } = [];
+}

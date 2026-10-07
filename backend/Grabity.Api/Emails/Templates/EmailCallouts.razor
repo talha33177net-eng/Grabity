@@ -1,0 +1,22 @@
+@foreach (var callout in Items)
+{
+    var (background, border, heading) = Store.Theme.Tone(callout.Tone);
+    <EmailSection Top="16">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:@background;border:1px solid @border;border-radius:12px;">
+            <tr>
+                <td style="padding:14px 18px;">
+                    @if (callout.Title is { } title)
+                    {
+                        <p style="margin:0 0 3px;@Css.Text(14, 20, 700, heading)">@title</p>
+                    }
+                    <p style="margin:0;@Css.Text(14, 22)">@callout.Text</p>
+                </td>
+            </tr>
+        </table>
+    </EmailSection>
+}
+
+@code {
+    [Parameter] public EmailStore Store { get; set; } = default!;
+    [Parameter] public List<EmailCallout> Items { get; set; } = [];
+}

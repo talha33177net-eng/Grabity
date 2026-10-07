@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800"><defs><linearGradient id="g59" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#374151"/><stop offset="1" stop-color="#111827"/></linearGradient><linearGradient id="c60" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6b7280"/><stop offset="1" stop-color="#374151"/></linearGradient></defs><ellipse cx="400" cy="700" rx="240" ry="24" fill="#0f172a" opacity=".10"/>
+<path d="M210 430 C190 180 610 180 590 430" stroke="url(#g59)" stroke-width="44" fill="none" stroke-linecap="round"/>
+<path d="M238 410 C226 220 574 220 562 410" stroke="#6b7280" stroke-width="10" fill="none" opacity=".35" stroke-linecap="round"/>
+<rect x="150" y="380" width="140" height="250" rx="64" fill="url(#g59)"/><rect x="186" y="400" width="104" height="210" rx="50" fill="url(#c60)" opacity=".8"/>
+<rect x="510" y="380" width="140" height="250" rx="64" fill="url(#g59)"/><rect x="510" y="400" width="104" height="210" rx="50" fill="url(#c60)" opacity=".8"/>
+<rect x="174" y="420" width="10" height="60" rx="5" fill="#fff" opacity=".3"/></svg>
