@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
+import type { CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { StoreSettings } from './types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -31,6 +33,20 @@ export const bannerFallbackWidth = 1200
 export const heroSizes = '(min-width: 1440px) 920px, (min-width: 1024px) 64vw, 100vw'
 /** Full container width. */
 export const wideSizes = '(min-width: 1440px) 1380px, 100vw'
+
+/** Header logo heights in px, within the same ranges the API saves. */
+export function logoHeights(general: StoreSettings['general'] | undefined) {
+  return { desktop: clamp(general?.logoHeight ?? 48, 24, 96), mobile: clamp(general?.logoHeightMobile ?? 36, 20, 64) }
+}
+
+/**
+ * CSS variables with the header row heights, grown to fit a tall logo. The store layout sets them so the header
+ * and things that stick under it (product page tabs) agree.
+ */
+export function headerHeightVars(general: StoreSettings['general'] | undefined): CSSProperties {
+  const { desktop, mobile } = logoHeights(general)
+  return { '--header-h': `${Math.max(64, mobile + 20)}px`, '--header-h-sm': `${Math.max(72, desktop + 24)}px` } as CSSProperties
+}
 
 export function discountPercent(price: number, compareAt?: number | null): number {
   if (!compareAt || compareAt <= price) return 0

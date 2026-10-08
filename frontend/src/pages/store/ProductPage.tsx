@@ -297,7 +297,7 @@ function ProductView({ product }: { product: ProductDetail }) {
           </div>
         </div>
 
-        <div className="sticky top-16 z-20 -mx-4 mt-6 overflow-x-auto border-b border-slate-200 bg-slate-50/95 px-4 backdrop-blur scrollbar-none sm:top-[72px] sm:mx-0 sm:px-0">
+        <div className="sticky top-(--header-h) z-20 -mx-4 mt-6 overflow-x-auto border-b border-slate-200 bg-slate-50/95 px-4 backdrop-blur scrollbar-none sm:top-(--header-h-sm) sm:mx-0 sm:px-0">
           <nav className="flex gap-6">
             {sections.map((s) => (
               <a key={s.id} href={`#${s.id}`} className="border-b-2 border-transparent py-3 text-sm font-semibold whitespace-nowrap text-slate-600 hover:border-brand hover:text-brand">

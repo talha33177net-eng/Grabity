@@ -25,6 +25,9 @@ export interface StoreSettings {
     storeName: string
     tagline?: string | null
     logoUrl?: string | null
+    logoHeight: number
+    logoHeightMobile: number
+    showNameWithLogo: boolean
     faviconUrl?: string | null
     primaryColor: string
     currencySymbol: string

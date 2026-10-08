@@ -210,23 +210,23 @@ export function useConfirm() {
   return [confirm, dialog] as const
 }
 
-async function uploadFile(file: File, folder: string) {
+async function uploadFile(file: File, folder: string, trim = false) {
   try {
-    return (await http.upload(file, folder)).url
+    return (await http.upload(file, folder, trim)).url
   } catch (error) {
     toast.error(`${file.name}: ${errorMessage(error)}`)
     return null
   }
 }
 
-/** Single image field with upload, preview and remove. */
-export function ImageUpload({ value, onChange, folder, aspect = 'aspect-square', className, label = 'Upload image' }: { value?: string | null; onChange: (url: string | null) => void; folder: string; aspect?: string; className?: string; label?: string }) {
+/** Single image field with upload, preview and remove. `trim` crops an empty border off the uploaded image. */
+export function ImageUpload({ value, onChange, folder, aspect = 'aspect-square', className, label = 'Upload image', trim }: { value?: string | null; onChange: (url: string | null) => void; folder: string; aspect?: string; className?: string; label?: string; trim?: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const pick = async (file?: File) => {
     if (!file) return
     setBusy(true)
-    const url = await uploadFile(file, folder)
+    const url = await uploadFile(file, folder, trim)
     setBusy(false)
     if (url) onChange(url)
   }

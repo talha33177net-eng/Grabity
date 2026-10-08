@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Trash2, Truck, Wallet } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Menu, Pencil, Plus, Search, ShoppingBag, Trash2, Truck, UserRound, Wallet } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { ActiveBadge, Card, DataTable, ImageUpload, PageHeader, useConfirm } from '@/components/admin/Common'
+import { Logo } from '@/components/store/Logo'
 import { Button } from '@/components/ui/Button'
 import { Alert, Badge, PageLoader } from '@/components/ui/Feedback'
 import { Field, Input, Select, Switch, Textarea } from '@/components/ui/Form'
@@ -14,7 +15,7 @@ import { errorMessage, http } from '@/lib/api'
 import type { AdminPaymentMethod, AdminShippingMethod } from '@/lib/adminTypes'
 import { money } from '@/lib/format'
 import type { PaymentMethodType, StoreSettings } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { cn, headerHeightVars, logoHeights } from '@/lib/utils'
 
 const tabs = ['General', 'Contact', 'Social', 'Checkout', 'Highlights', 'SEO', 'Footer', 'Analytics'] as const
 type Tab = (typeof tabs)[number]
@@ -68,39 +69,56 @@ export function SettingsPage() {
         </nav>
         <Card>
           {tab === 'General' && (
-            <div className="grid gap-5 md:grid-cols-[1fr_220px]">
-              <div className="space-y-4">
-                <Field label="Store name" required>
-                  <Input value={form.general.storeName} onChange={(e) => set('general', { storeName: e.target.value })} />
-                </Field>
-                <Field label="Tagline">
-                  <Input value={form.general.tagline ?? ''} onChange={(e) => set('general', { tagline: e.target.value })} />
-                </Field>
-                <Field label="Announcement bar" hint="Thin bar above the header. Leave empty to hide.">
-                  <Input value={form.general.announcementText ?? ''} onChange={(e) => set('general', { announcementText: e.target.value })} />
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Brand color" hint="Buttons, links and highlights.">
-                    <div className="flex gap-2">
-                      <input type="color" value={form.general.primaryColor} onChange={(e) => set('general', { primaryColor: e.target.value })} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 bg-white p-1" />
-                      <Input value={form.general.primaryColor} onChange={(e) => set('general', { primaryColor: e.target.value })} className="font-mono" />
-                    </div>
+            <>
+              <div className="grid gap-5 md:grid-cols-[1fr_220px]">
+                <div className="space-y-4">
+                  <Field label="Store name" required>
+                    <Input value={form.general.storeName} onChange={(e) => set('general', { storeName: e.target.value })} />
                   </Field>
-                  <Field label="Currency symbol">
-                    <Input value={form.general.currencySymbol} onChange={(e) => set('general', { currencySymbol: e.target.value })} />
+                  <Field label="Tagline">
+                    <Input value={form.general.tagline ?? ''} onChange={(e) => set('general', { tagline: e.target.value })} />
+                  </Field>
+                  <Field label="Announcement bar" hint="Thin bar above the header. Leave empty to hide.">
+                    <Input value={form.general.announcementText ?? ''} onChange={(e) => set('general', { announcementText: e.target.value })} />
+                  </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Brand color" hint="Buttons, links and highlights.">
+                      <div className="flex gap-2">
+                        <input type="color" value={form.general.primaryColor} onChange={(e) => set('general', { primaryColor: e.target.value })} className="h-10 w-14 cursor-pointer rounded-lg border border-slate-300 bg-white p-1" />
+                        <Input value={form.general.primaryColor} onChange={(e) => set('general', { primaryColor: e.target.value })} className="font-mono" />
+                      </div>
+                    </Field>
+                    <Field label="Currency symbol">
+                      <Input value={form.general.currencySymbol} onChange={(e) => set('general', { currencySymbol: e.target.value })} />
+                    </Field>
+                  </div>
+                  <Switch checked={form.general.reviewsRequireApproval} onChange={(v) => set('general', { reviewsRequireApproval: v })} label="Approve reviews before publishing" description="Recommended to avoid spam." />
+                </div>
+                <div className="space-y-4">
+                  <Field label="Logo" hint="Empty space around the logo is cropped off when you upload it. Transparent PNG looks best.">
+                    <ImageUpload value={form.general.logoUrl} onChange={(url) => set('general', { logoUrl: url })} folder="settings" aspect="aspect-[5/2]" label="Upload logo" trim />
+                  </Field>
+                  <Field label="Favicon" hint="Square, at least 64×64.">
+                    <ImageUpload value={form.general.faviconUrl} onChange={(url) => set('general', { faviconUrl: url })} folder="settings" className="w-24" label="Upload" />
                   </Field>
                 </div>
-                <Switch checked={form.general.reviewsRequireApproval} onChange={(v) => set('general', { reviewsRequireApproval: v })} label="Approve reviews before publishing" description="Recommended to avoid spam." />
               </div>
-              <div className="space-y-4">
-                <Field label="Logo" hint="Wide logo, transparent PNG. Height ~80px.">
-                  <ImageUpload value={form.general.logoUrl} onChange={(url) => set('general', { logoUrl: url })} folder="settings" aspect="aspect-[5/2]" label="Upload logo" />
-                </Field>
-                <Field label="Favicon" hint="Square, at least 64×64.">
-                  <ImageUpload value={form.general.faviconUrl} onChange={(url) => set('general', { faviconUrl: url })} folder="settings" className="w-24" label="Upload" />
-                </Field>
-              </div>
-            </div>
+              {form.general.logoUrl && (
+                <div className="mt-6 border-t border-slate-100 pt-5">
+                  <h3 className="font-semibold text-slate-900">Logo size</h3>
+                  <p className="mt-0.5 text-sm text-slate-500">The preview changes as you adjust. Save settings to apply it to the store.</p>
+                  <div className="mt-4 grid gap-6 lg:grid-cols-[260px_1fr]">
+                    <div className="space-y-5">
+                      {/* Same ranges as AdminSettingsController. */}
+                      <SizeSlider label="Computers and tablets" value={form.general.logoHeight} min={24} max={96} onChange={(v) => set('general', { logoHeight: v })} />
+                      <SizeSlider label="Phones" value={form.general.logoHeightMobile} min={20} max={64} onChange={(v) => set('general', { logoHeightMobile: v })} />
+                      <Switch checked={form.general.showNameWithLogo} onChange={(v) => set('general', { showNameWithLogo: v })} label="Show store name next to logo" description="Turn on if your logo is only an icon." />
+                    </div>
+                    <LogoPreview general={form.general} />
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {tab === 'Contact' && (
@@ -235,6 +253,62 @@ export function SettingsPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+function SizeSlider({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (value: number) => void }) {
+  return (
+    <label className="block">
+      <span className="flex items-center justify-between text-sm font-medium text-slate-700">
+        {label}
+        <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">{value}px</span>
+      </span>
+      <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="mt-2 w-full cursor-pointer accent-brand" />
+    </label>
+  )
+}
+
+/** The storefront header and footer with the unsaved logo settings. */
+function LogoPreview({ general }: { general: StoreSettings['general'] }) {
+  const { desktop, mobile } = logoHeights(general)
+  return (
+    <div className="min-w-0 space-y-4" style={headerHeightVars(general)}>
+      <PreviewFrame label="Computer">
+        <div className="flex h-(--header-h-sm) items-center gap-6 bg-white px-5">
+          <Logo general={general} height={desktop} className="pointer-events-none" />
+          <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm text-slate-400">
+            <Search className="size-4 shrink-0" /> <span className="truncate">Search products</span>
+          </div>
+          <div className="flex gap-4 text-slate-500">
+            <UserRound className="size-5.5" />
+            <ShoppingBag className="size-5.5" />
+          </div>
+        </div>
+      </PreviewFrame>
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
+        <PreviewFrame label="Phone">
+          <div className="flex h-(--header-h) items-center gap-3 bg-white px-4">
+            <Menu className="size-6 shrink-0 text-slate-500" />
+            <Logo general={general} height={mobile} className="pointer-events-none min-w-0" />
+            <ShoppingBag className="ml-auto size-5.5 shrink-0 text-slate-500" />
+          </div>
+        </PreviewFrame>
+        <PreviewFrame label="Footer">
+          <div className="flex h-(--header-h) items-center bg-brand-night px-5">
+            <Logo general={general} height={desktop} light className="pointer-events-none" />
+          </div>
+        </PreviewFrame>
+      </div>
+    </div>
+  )
+}
+
+function PreviewFrame({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <figure className="min-w-0">
+      <figcaption className="mb-1.5 text-xs font-medium text-slate-500">{label}</figcaption>
+      <div className="overflow-hidden rounded-xl border border-slate-200 shadow-xs">{children}</div>
+    </figure>
   )
 }
 

@@ -29,7 +29,7 @@ export function Header() {
       )}
 
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85">
-        <div className="container-x flex h-16 items-center gap-3 sm:h-[72px] lg:gap-8">
+        <div className="container-x flex h-(--header-h) items-center gap-3 sm:h-(--header-h-sm) lg:gap-8">
           <button className="-ml-2 rounded-lg p-2 text-slate-700 hover:bg-slate-100 lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <Menu className="size-6" />
           </button>

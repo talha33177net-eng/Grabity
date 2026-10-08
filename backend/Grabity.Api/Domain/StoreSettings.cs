@@ -18,6 +18,12 @@ public class GeneralSettings
     public string StoreName { get; set; } = "Grabity";
     public string? Tagline { get; set; }
     public string? LogoUrl { get; set; }
+    /// <summary>Header logo height in CSS pixels on tablets and computers.</summary>
+    public int LogoHeight { get; set; } = 48;
+    /// <summary>Header logo height in CSS pixels on phones.</summary>
+    public int LogoHeightMobile { get; set; } = 36;
+    /// <summary>Shows the store name next to the uploaded logo. Off by default, since most logos already contain it.</summary>
+    public bool ShowNameWithLogo { get; set; }
     public string? FaviconUrl { get; set; }
     public string PrimaryColor { get; set; } = "#0ea5e9";
     public string CurrencySymbol { get; set; } = "৳";

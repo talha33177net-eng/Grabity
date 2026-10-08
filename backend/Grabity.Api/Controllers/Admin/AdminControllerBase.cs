@@ -33,8 +33,8 @@ public class AdminUtilityController(MediaStorage media, CatalogCache catalog, Ap
 {
     [HttpPost("uploads")]
     [RequestSizeLimit(12 * 1024 * 1024)]
-    public async Task<UploadResultDto> Upload(IFormFile file, [FromQuery] string? folder, CancellationToken ct) =>
-        new(await media.SaveImageAsync(file, folder, ct));
+    public async Task<UploadResultDto> Upload(IFormFile file, [FromQuery] string? folder, [FromQuery] bool trim, CancellationToken ct) =>
+        new(await media.SaveImageAsync(file, folder, trim, ct));
 
     /// <summary>Options for category/brand pickers in admin forms.</summary>
     [HttpGet("lookups")]

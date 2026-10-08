@@ -15,6 +15,8 @@ public class MediaStorage
     private const long MaxUploadBytes = 10 * 1024 * 1024;
     private const int MaxStoredDimension = 2000;
     private const int VariantQuality = 80;
+    /// <summary>How far (0-255) a pixel may be from the border colour, or how opaque on a transparent border, and still be cropped.</summary>
+    private const int TrimTolerance = 24;
     private static readonly int[] Widths = [64, 96, 128, 160, 240, 320, 400, 480, 640, 800, 960, 1200, 1600];
     private static readonly string[] AllowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
     private static readonly string[] ResizableExtensions = [".jpg", ".jpeg", ".png", ".webp"];
@@ -35,6 +37,8 @@ public class MediaStorage
         ["blog"] = [400, 640, 1200],
         ["pages"] = [960],
         ["misc"] = [960],
+        // Store logo (logoWidths in Logo.tsx; emails ask for 440, which snaps to 480).
+        ["settings"] = [240, 480, 960],
     };
 
     private readonly ILogger<MediaStorage> _logger;
@@ -53,7 +57,8 @@ public class MediaStorage
 
     public IFileProvider FileProvider => new PhysicalFileProvider(Root);
 
-    public async Task<string> SaveImageAsync(IFormFile file, string? folder, CancellationToken ct)
+    /// <param name="trim">Crop away an empty border first (see <see cref="TrimBorder"/>). Animated GIFs are never cropped.</param>
+    public async Task<string> SaveImageAsync(IFormFile file, string? folder, bool trim, CancellationToken ct)
     {
         if (file.Length == 0) throw new AppException("The file is empty.");
         if (file.Length > MaxUploadBytes) throw new AppException("Images must be 10 MB or smaller.");
@@ -83,7 +88,9 @@ public class MediaStorage
             return ToUrl(gifRelative);
         }
 
-        using var bitmap = DecodeOriented(buffer) ?? throw new AppException("The file is not a valid image.");
+        using var decoded = DecodeOriented(buffer) ?? throw new AppException("The file is not a valid image.");
+        using var trimmed = trim ? TrimBorder(decoded) : null;
+        var bitmap = trimmed ?? decoded;
         using var resized = ResizeToFit(bitmap, MaxStoredDimension);
         using var image = SKImage.FromBitmap(resized ?? bitmap);
         using var data = image.Encode(SKEncodedImageFormat.Webp, 85)
@@ -246,6 +253,55 @@ public class MediaStorage
         }
         source.Dispose();
         return rotated;
+    }
+
+    /// <summary>
+    /// Crops a plain border off the image: transparent margins, or a solid background (e.g. white) when all four
+    /// corners share it. Logos are often exported in the middle of a large empty canvas, which makes them tiny once
+    /// fitted to a header's height. Null when there is nothing to crop.
+    /// </summary>
+    private static SKBitmap? TrimBorder(SKBitmap bitmap)
+    {
+        using var converted = bitmap.ColorType is SKColorType.Bgra8888 or SKColorType.Rgba8888 ? null : bitmap.Copy(SKColorType.Bgra8888);
+        var source = converted ?? bitmap;
+        int width = source.Width, height = source.Height, stride = source.RowBytes;
+        var pixels = source.GetPixelSpan();
+
+        // Both 8888 layouts keep alpha in the fourth byte; colours are only compared with the same layout.
+        var background = pixels[..4].ToArray();
+        var transparent = background[3] <= TrimTolerance;
+        bool IsBackground(ReadOnlySpan<byte> pixel)
+        {
+            if (transparent) return pixel[3] <= TrimTolerance;
+            for (var i = 0; i < 4; i++)
+                if (Math.Abs(pixel[i] - background[i]) > TrimTolerance) return false;
+            return true;
+        }
+        ReadOnlySpan<byte> At(ReadOnlySpan<byte> all, int x, int y) => all.Slice(y * stride + x * 4, 4);
+
+        // A solid colour only counts as a border when every corner has it; otherwise it's probably a photo.
+        if (!transparent && !(IsBackground(At(pixels, width - 1, 0)) && IsBackground(At(pixels, 0, height - 1)) && IsBackground(At(pixels, width - 1, height - 1))))
+            return null;
+
+        int top = -1, bottom = -1, left = width, right = -1;
+        for (var y = 0; y < height; y++)
+        {
+            var first = 0;
+            while (first < width && IsBackground(At(pixels, first, y))) first++;
+            if (first == width) continue;
+            var last = width - 1;
+            while (IsBackground(At(pixels, last, y))) last--;
+            if (top < 0) top = y;
+            bottom = y;
+            left = Math.Min(left, first);
+            right = Math.Max(right, last);
+        }
+
+        if (top < 0) return null;
+        var bounds = new SKRectI(left, top, right + 1, bottom + 1);
+        if (bounds.Width == width && bounds.Height == height) return null;
+        using var subset = new SKBitmap();
+        return bitmap.ExtractSubset(subset, bounds) ? subset.Copy() : null;
     }
 
     private static SKBitmap? ResizeToFit(SKBitmap bitmap, int maxDimension)

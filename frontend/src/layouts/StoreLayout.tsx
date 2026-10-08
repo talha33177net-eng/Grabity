@@ -7,6 +7,7 @@ import { Header } from '@/components/store/Header'
 import { MobileBottomNav } from '@/components/store/MobileBottomNav'
 import { useBootstrap } from '@/hooks/useStore'
 import { initAnalytics, trackPageView } from '@/lib/analytics'
+import { headerHeightVars } from '@/lib/utils'
 
 export interface StoreRouteHandle {
   /** Page renders its own sticky bottom bar on mobile (e.g. product page). */
@@ -47,7 +48,7 @@ export function StoreLayout() {
   useEffect(prefetchCommonPages, [])
 
   return (
-    <div className="flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+    <div className="flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0" style={headerHeightVars(data?.settings.general)}>
       <Header />
       <main className="flex-1">
         <Outlet />

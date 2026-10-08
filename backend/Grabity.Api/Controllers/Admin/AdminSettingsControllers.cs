@@ -16,6 +16,9 @@ public class AdminSettingsController(SettingsService settings, CatalogCache cata
         if (string.IsNullOrWhiteSpace(request.General.StoreName)) throw new AppException("Store name is required.");
         if (!System.Text.RegularExpressions.Regex.IsMatch(request.General.PrimaryColor ?? "", "^#[0-9a-fA-F]{6}$"))
             throw new AppException("Primary color must be a hex color like #6d28d9.");
+        // Same ranges as the logo size sliders in SettingsPages.tsx.
+        request.General.LogoHeight = Math.Clamp(request.General.LogoHeight, 24, 96);
+        request.General.LogoHeightMobile = Math.Clamp(request.General.LogoHeightMobile, 20, 64);
         request.Features = request.Features.Where(f => !string.IsNullOrWhiteSpace(f.Title)).Take(8).ToList();
         request.Checkout.FreeShippingThreshold = Math.Max(0, request.Checkout.FreeShippingThreshold);
         request.Checkout.MinimumOrderAmount = Math.Max(0, request.Checkout.MinimumOrderAmount);

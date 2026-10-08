@@ -145,9 +145,10 @@ export const http = {
   post: <T>(path: string, body?: unknown) => api<T>(path, { method: 'POST', body: body ?? {} }),
   put: <T>(path: string, body?: unknown) => api<T>(path, { method: 'PUT', body: body ?? {} }),
   delete: <T = void>(path: string) => api<T>(path, { method: 'DELETE' }),
-  upload: async (file: File, folder: string) => {
+  /** `trim` crops an empty or plain-colour border off the image (for logos). */
+  upload: async (file: File, folder: string, trim = false) => {
     const form = new FormData()
     form.append('file', file)
-    return api<{ url: string }>('/admin/uploads', { method: 'POST', body: form, query: { folder } })
+    return api<{ url: string }>('/admin/uploads', { method: 'POST', body: form, query: { folder, trim } })
   },
 }
