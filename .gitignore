@@ -30,3 +30,10 @@ Thumbs.db
 appsettings.Local.json
 .env
 .env.local
+
+# Deployment output (web.config holds the live connection string) and database backups
+publish/
+grabity-site/
+*.bak
+*.zip
+grabity-uploads/
