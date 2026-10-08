@@ -963,7 +963,11 @@ export function InvoicePage() {
       <div className="mx-auto max-w-3xl bg-white p-10 shadow-sm print:max-w-none print:p-0 print:shadow-none">
         <div className="flex items-start justify-between gap-6 border-b border-slate-200 pb-6">
           <div>
-            <p className="text-2xl font-extrabold text-brand">{settings?.general.storeName ?? 'Grabity'}</p>
+            {settings?.general.logoUrl ? (
+              <img src={img(settings.general.logoUrl, 480)} alt={settings.general.storeName} className="h-14 w-auto max-w-64 object-contain object-left" />
+            ) : (
+              <p className="text-2xl font-extrabold text-brand">{settings?.general.storeName ?? 'Grabity'}</p>
+            )}
             <div className="mt-2 space-y-0.5 text-xs text-slate-500">
               {settings?.contact.address && <p>{settings.contact.address}</p>}
               {settings?.contact.phone && <p>{settings.contact.phone}</p>}

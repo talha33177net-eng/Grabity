@@ -126,9 +126,15 @@ export function Footer() {
 
       <div className="border-t border-white/10">
         <div className="container-x flex flex-col gap-3 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {year} {settings?.footer.copyrightText ?? `${settings?.general.storeName ?? 'Grabity'}. All rights reserved.`}
-          </p>
+          <div className="space-y-1">
+            <p>© {year} {settings?.footer.copyrightText ?? `${settings?.general.storeName ?? 'Grabity'}. All rights reserved.`}</p>
+            <p>
+              Designed and Developed by{' '}
+              <a href="https://talha.bdcorex.com" target="_blank" rel="noopener" className="font-semibold text-slate-300 hover:text-white">
+                Talha
+              </a>
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-1">We accept</span>
             {['Cash on Delivery', 'bKash', 'Nagad'].map((m) => (

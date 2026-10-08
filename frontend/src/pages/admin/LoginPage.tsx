@@ -10,6 +10,7 @@ import { useDocumentMeta } from '@/hooks/useDocumentMeta'
 import { meKey, useBootstrap, useIsStaff, useMe } from '@/hooks/useStore'
 import { errorMessage, http } from '@/lib/api'
 import type { User } from '@/lib/types'
+import { img } from '@/lib/utils'
 
 export default function AdminLoginPage() {
   useDocumentMeta({ title: 'Admin sign in', noIndex: true })
@@ -21,7 +22,9 @@ export default function AdminLoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const canReset = !!useBootstrap().data?.passwordResetByEmail
+  const bootstrap = useBootstrap().data
+  const canReset = !!bootstrap?.passwordResetByEmail
+  const logoUrl = bootstrap?.settings.general.logoUrl
 
   const login = useMutation({
     mutationFn: () => http.post<User>('/auth/login', { identifier: email, password, rememberMe: true }),
@@ -42,7 +45,7 @@ export default function AdminLoginPage() {
     <div className="flex min-h-dvh items-center justify-center bg-slate-950 bg-[radial-gradient(circle_at_top,var(--color-brand-deep),transparent_60%)] p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <LogoMark className="size-14" />
+          {logoUrl ? <img src={img(logoUrl, 480)} alt="" className="h-16 w-auto max-w-full object-contain" /> : <LogoMark className="size-14" />}
           <h1 className="mt-4 text-2xl font-bold text-white">Admin panel</h1>
           <p className="mt-1 text-sm text-slate-400">Sign in to manage your store</p>
         </div>

@@ -33,7 +33,7 @@ import { EmptyState, PageLoader } from '@/components/ui/Feedback'
 import { useIsStaff, useLogout, useMe, useSettings } from '@/hooks/useStore'
 import { http } from '@/lib/api'
 import type { AdminCounts } from '@/lib/adminTypes'
-import { cn, initials } from '@/lib/utils'
+import { cn, img, initials } from '@/lib/utils'
 
 interface NavItem {
   to: string
@@ -141,13 +141,20 @@ export function AdminLayout() {
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <Link to="/admin" className="flex items-center gap-2.5 px-5 py-5">
-        <LogoMark className="size-9" />
-        <div>
-          <p className="leading-tight font-bold text-white">{settings?.general.storeName ?? 'Grabity'}</p>
-          <p className="text-xs text-slate-400">Admin panel</p>
-        </div>
-      </Link>
+      {settings?.general.logoUrl ? (
+        <Link to="/admin" className="block px-5 py-5">
+          <img src={img(settings.general.logoUrl, 480)} alt={settings.general.storeName} className="h-10 w-auto max-w-full object-contain object-left" />
+          <p className="mt-1.5 text-xs text-slate-400">Admin panel</p>
+        </Link>
+      ) : (
+        <Link to="/admin" className="flex items-center gap-2.5 px-5 py-5">
+          <LogoMark className="size-9" />
+          <div>
+            <p className="leading-tight font-bold text-white">{settings?.general.storeName ?? 'Grabity'}</p>
+            <p className="text-xs text-slate-400">Admin panel</p>
+          </div>
+        </Link>
+      )}
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-6 [scrollbar-color:var(--color-slate-700)_transparent] [scrollbar-width:thin]">
         {nav.map((group, i) => (
           <div key={i}>
