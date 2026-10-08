@@ -7,17 +7,35 @@ namespace Grabity.Api.Services;
 
 /// <summary>
 /// Stores uploaded images under the media root (served at /uploads) and produces
-/// resized WebP copies on demand for <c>/uploads/...?w=480</c> style requests.
+/// resized WebP copies for <c>/uploads/...?w=480</c> style requests.
 /// </summary>
 public class MediaStorage
 {
     public const string RequestPath = "/uploads";
     private const long MaxUploadBytes = 10 * 1024 * 1024;
     private const int MaxStoredDimension = 2000;
+    private const int VariantQuality = 80;
     private static readonly int[] Widths = [64, 96, 128, 160, 240, 320, 400, 480, 640, 800, 960, 1200, 1600];
     private static readonly string[] AllowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+    private static readonly string[] ResizableExtensions = [".jpg", ".jpeg", ".png", ".webp"];
     private static readonly string[] Folders = ["products", "categories", "brands", "banners", "blog", "pages", "settings", "misc"];
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new();
+
+    /// <summary>
+    /// Sizes the storefront shows each kind of image at (the widths passed to <c>img()</c>/<c>srcSet()</c> in the
+    /// frontend, snapped to <see cref="Widths"/>). They are made when the image is uploaded so no shopper waits
+    /// for a resize; any other size is still made on its first request.
+    /// </summary>
+    private static readonly Dictionary<string, int[]> VariantWidths = new()
+    {
+        ["products"] = [96, 128, 160, 240, 400, 960],
+        ["banners"] = [640, 800, 960, 1200, 1600],
+        ["categories"] = [64, 96, 240, 640, 960, 1200, 1600],
+        ["brands"] = [240],
+        ["blog"] = [400, 640, 1200],
+        ["pages"] = [960],
+        ["misc"] = [960],
+    };
 
     private readonly ILogger<MediaStorage> _logger;
 
@@ -74,7 +92,52 @@ public class MediaStorage
         var relative = Path.Combine(relativeDir, name + ".webp");
         await using (var output = File.Create(Path.Combine(Root, relative)))
             data.SaveTo(output);
-        return ToUrl(relative);
+
+        var url = ToUrl(relative);
+        if (VariantWidths.TryGetValue(folder, out var widths))
+        {
+            var stored = resized ?? bitmap;
+            foreach (var width in widths.Where(w => w < stored.Width))
+                await WriteVariantAsync(stored, width, CachePath(url[RequestPath.Length..], width), ct);
+        }
+        return url;
+    }
+
+    /// <summary>
+    /// Makes the storefront sizes that are missing for images already in the media folder (uploaded before sizes
+    /// were made at upload time, or after the cache folder was cleared). Returns how many were made.
+    /// </summary>
+    public async Task<int> CreateMissingVariantsAsync(CancellationToken ct)
+    {
+        var created = 0;
+        foreach (var (folder, widths) in VariantWidths)
+        {
+            var dir = Path.Combine(Root, folder);
+            if (!Directory.Exists(dir)) continue;
+            foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!ResizableExtensions.Contains(Path.GetExtension(file).ToLowerInvariant())) continue;
+                var relative = "/" + Path.GetRelativePath(Root, file).Replace(Path.DirectorySeparatorChar, '/');
+                try
+                {
+                    var sourceWidth = ReadOrientedWidth(file);
+                    var missing = widths.Where(w => w < sourceWidth && !IsFresh(CachePath(relative, w), file)).ToList();
+                    if (missing.Count == 0) continue;
+
+                    await using var input = File.OpenRead(file);
+                    using var bitmap = DecodeOriented(input);
+                    if (bitmap is null) continue;
+                    foreach (var width in missing)
+                        if (await WriteVariantAsync(bitmap, width, CachePath(relative, width), ct)) created++;
+                }
+                catch (IOException ex)
+                {
+                    _logger.LogWarning(ex, "Could not make image sizes for {File}", file);
+                }
+            }
+        }
+        return created;
     }
 
     /// <summary>Deletes a file previously returned by <see cref="SaveImageAsync"/>. Unknown URLs are ignored.</summary>
@@ -91,39 +154,55 @@ public class MediaStorage
     {
         var source = ResolvePath(RequestPath + relativeRequestPath);
         if (source is null || !File.Exists(source)) return null;
-        var ext = Path.GetExtension(source).ToLowerInvariant();
-        if (ext is ".svg" or ".gif") return null;
+        if (!ResizableExtensions.Contains(Path.GetExtension(source).ToLowerInvariant())) return null;
 
         var width = Widths.FirstOrDefault(w => w >= requestedWidth, Widths[^1]);
-        var cachePath = Path.Combine(Root, ".cache", width.ToString(), relativeRequestPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar) + ".webp");
-        if (File.Exists(cachePath) && File.GetLastWriteTimeUtc(cachePath) >= File.GetLastWriteTimeUtc(source))
-            return cachePath;
+        var cachePath = CachePath(relativeRequestPath, width);
+        if (IsFresh(cachePath, source)) return cachePath;
 
         var gate = Locks.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
         await gate.WaitAsync(ct);
         try
         {
-            if (File.Exists(cachePath) && File.GetLastWriteTimeUtc(cachePath) >= File.GetLastWriteTimeUtc(source))
-                return cachePath;
+            if (IsFresh(cachePath, source)) return cachePath;
 
             await using var input = File.OpenRead(source);
             using var bitmap = DecodeOriented(input);
-            if (bitmap is null) return null;
-            using var resized = bitmap.Width > width ? ResizeToWidth(bitmap, width) : null;
-            using var image = SKImage.FromBitmap(resized ?? bitmap);
-            using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
-            if (data is null) return null;
-            Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
-            var temp = cachePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
-            await using (var output = File.Create(temp))
-                data.SaveTo(output);
-            File.Move(temp, cachePath, overwrite: true);
-            return cachePath;
+            return bitmap is not null && await WriteVariantAsync(bitmap, width, cachePath, ct) ? cachePath : null;
         }
         finally
         {
             gate.Release();
         }
+    }
+
+    private string CachePath(string relativeRequestPath, int width) =>
+        Path.Combine(Root, ".cache", width.ToString(), relativeRequestPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar) + ".webp");
+
+    private static bool IsFresh(string cachePath, string source) =>
+        File.Exists(cachePath) && File.GetLastWriteTimeUtc(cachePath) >= File.GetLastWriteTimeUtc(source);
+
+    /// <summary>Encodes a WebP copy of <paramref name="source"/> at most <paramref name="width"/> wide, replacing the cache file atomically.</summary>
+    private static async Task<bool> WriteVariantAsync(SKBitmap source, int width, string cachePath, CancellationToken ct)
+    {
+        using var resized = source.Width > width ? ResizeToWidth(source, width) : null;
+        using var image = SKImage.FromBitmap(resized ?? source);
+        using var data = image.Encode(SKEncodedImageFormat.Webp, VariantQuality);
+        if (data is null) return false;
+        Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+        var temp = cachePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        await using (var output = File.Create(temp))
+            data.SaveTo(output);
+        File.Move(temp, cachePath, overwrite: true);
+        return true;
+    }
+
+    /// <summary>Image width after EXIF rotation, read from the file header without decoding the pixels.</summary>
+    private static int ReadOrientedWidth(string file)
+    {
+        using var codec = SKCodec.Create(file);
+        if (codec is null) return 0;
+        return codec.EncodedOrigin is SKEncodedOrigin.RightTop or SKEncodedOrigin.LeftBottom ? codec.Info.Height : codec.Info.Width;
     }
 
     private string? ResolvePath(string? url)
@@ -199,6 +278,7 @@ public class ResizedImageMiddleware(RequestDelegate next)
             if (file is not null)
             {
                 context.Response.ContentType = "image/webp";
+                context.Response.ContentLength = new FileInfo(file).Length;
                 context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
                 await context.Response.SendFileAsync(file, context.RequestAborted);
                 return;
@@ -206,5 +286,17 @@ public class ResizedImageMiddleware(RequestDelegate next)
         }
 
         await next(context);
+    }
+}
+
+/// <summary>Once per start, makes the storefront image sizes that don't exist yet (see <see cref="MediaStorage.CreateMissingVariantsAsync"/>).</summary>
+public class MediaVariantWarmer(MediaStorage media, ILogger<MediaVariantWarmer> logger) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        // Let startup and the first requests go first.
+        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+        var created = await Task.Run(() => media.CreateMissingVariantsAsync(stoppingToken), stoppingToken);
+        if (created > 0) logger.LogInformation("Made {Count} missing image sizes", created);
     }
 }

@@ -1,14 +1,22 @@
 import { ArrowRight, ShoppingBag } from 'lucide-react'
+import { useEffect, useRef, type PointerEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Skeleton } from '@/components/ui/Feedback'
 import { Price, Stars } from '@/components/ui/Misc'
 import { useAddToCart } from '@/hooks/useAddToCart'
+import { cardImageWidth, prefetchProduct, rememberCardImage } from '@/lib/prefetch'
 import type { ProductCard as Product } from '@/lib/types'
 import { cn, discountPercent, img } from '@/lib/utils'
 
-export function ProductCard({ product, className }: { product: Product; className?: string }) {
+/**
+ * @param priority The card is likely on screen when the page first shows (first row of a listing), so its photo
+ * should load straight away rather than as a lazy, low-priority image.
+ */
+export function ProductCard({ product, className, priority = false }: { product: Product; className?: string; priority?: boolean }) {
   const addToCart = useAddToCart()
   const navigate = useNavigate()
+  const prefetch = usePrefetchOnHover(product.slug)
+  const imageSrc = img(product.imageUrl, cardImageWidth)
   const off = product.hidePrice ? 0 : discountPercent(product.price, product.compareAtPrice)
   const soldOut = !product.inStock
   const canQuickAdd = !!product.quickAddVariantId && !soldOut && !product.hidePrice
@@ -33,13 +41,17 @@ export function ProductCard({ product, className }: { product: Product; classNam
         'group relative flex flex-col rounded-2xl bg-white p-2.5 ring-1 ring-slate-200/70 transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_45px_-22px_var(--color-brand-ring)] hover:ring-brand-muted sm:p-3',
         className,
       )}
+      {...prefetch}
     >
       <Link to={url} className="relative block aspect-square overflow-hidden rounded-xl bg-linear-to-br from-slate-50 via-white to-brand-softer">
-        {product.imageUrl && (
+        {imageSrc && (
           <img
-            src={img(product.imageUrl, 400)}
+            src={imageSrc}
             alt={product.name}
-            loading="lazy"
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+            decoding="async"
+            onLoad={() => rememberCardImage(imageSrc)}
             className={cn('size-full object-contain p-3 transition duration-500 group-hover:scale-[1.07]', soldOut && 'opacity-60 grayscale-[30%]')}
           />
         )}
@@ -89,6 +101,23 @@ export function ProductCard({ product, className }: { product: Product; classNam
       </div>
     </article>
   )
+}
+
+/**
+ * Starts loading the product page when a mouse pointer rests on the card (not a quick pass on the way
+ * elsewhere) or the card gets keyboard focus. Touches are left out: on phones they are mostly scrolling,
+ * and prefetching every card scrolled past would waste mobile data.
+ */
+function usePrefetchOnHover(slug: string) {
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+  return {
+    onPointerEnter: (event: PointerEvent) => {
+      if (event.pointerType === 'mouse') timer.current = window.setTimeout(() => prefetchProduct(slug), 80)
+    },
+    onPointerLeave: () => window.clearTimeout(timer.current),
+    onFocus: () => prefetchProduct(slug),
+  }
 }
 
 export function ProductCardSkeleton() {

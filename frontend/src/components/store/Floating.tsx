@@ -1,12 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { WhatsAppIcon } from '@/components/ui/Icons'
 import { Modal } from '@/components/ui/Overlay'
-import { useSettings } from '@/hooks/useStore'
-import { http } from '@/lib/api'
-import type { Home } from '@/lib/types'
+import { useHome, useSettings } from '@/hooks/useStore'
 import { cn, img } from '@/lib/utils'
 
 /** Floating WhatsApp chat button with a small greeting bubble. */
@@ -59,7 +56,7 @@ export function WhatsAppButton({ raised }: { raised?: boolean }) {
 
 /** Shows the admin-configured popup banner once per browser session. */
 export function PromoPopup() {
-  const { data: home } = useQuery({ queryKey: ['home'], queryFn: () => http.get<Home>('/store/home'), staleTime: 60_000 })
+  const { data: home } = useHome()
   const popup = home?.popup
   const [open, setOpen] = useState(false)
 
@@ -72,8 +69,24 @@ export function PromoPopup() {
       /* storage unavailable */
     }
     if (seen) return
-    const timer = window.setTimeout(() => setOpen(true), 1200)
-    return () => window.clearTimeout(timer)
+    // Open once the image has downloaded too, so the popup appears complete instead of growing as it arrives.
+    let waited = false
+    let loaded = false
+    const show = () => waited && loaded && setOpen(true)
+    const image = new Image()
+    image.onload = image.onerror = () => {
+      loaded = true
+      show()
+    }
+    image.src = img(popup.imageUrl, 800)!
+    const timer = window.setTimeout(() => {
+      waited = true
+      show()
+    }, 1200)
+    return () => {
+      window.clearTimeout(timer)
+      image.onload = image.onerror = null
+    }
   }, [popup])
 
   if (!popup) return null

@@ -14,6 +14,7 @@ import { useSettings } from '@/hooks/useStore'
 import { track } from '@/lib/analytics'
 import { ApiError, http } from '@/lib/api'
 import { money } from '@/lib/format'
+import { galleryImageWidth, initialImageIndex, productQuery, shownCardImage } from '@/lib/prefetch'
 import type { ProductCard, ProductDetail, Variant } from '@/lib/types'
 import { cn, img, isCssColor, stripHtml } from '@/lib/utils'
 import { useRecentlyViewed } from '@/stores/recent'
@@ -23,10 +24,7 @@ const optionValue = (variant: Variant, index: number) => [variant.option1, varia
 
 export default function ProductPage() {
   const { slug = '' } = useParams()
-  const { data: product, error, isLoading } = useQuery({
-    queryKey: ['product', slug],
-    queryFn: () => http.get<ProductDetail>(`/products/${slug}`),
-  })
+  const { data: product, error, isLoading } = useQuery(productQuery(slug))
 
   if (error instanceof ApiError && error.status === 404) return <NotFoundPage title="Product not found" description="This product may have been removed or is no longer available." />
   if (isLoading || !product) return <PageLoader />
@@ -49,7 +47,8 @@ function ProductView({ product }: { product: ProductDetail }) {
     () => product.variants.find((v) => [0, 1, 2].every((i) => i >= product.options.length || optionValue(v, i) === selected[i])) ?? null,
     [product, selected],
   )
-  const [activeImage, setActiveImage] = useState(0)
+  // Start on the selected variant's image so the page doesn't load the first image and then switch.
+  const [activeImage, setActiveImage] = useState(() => initialImageIndex(product))
 
   useEffect(() => {
     if (variant?.imageUrl) {
@@ -82,6 +81,7 @@ function ProductView({ product }: { product: ProductDetail }) {
   useEffect(() => {
     pushRecent(card)
     track('ViewContent', { value: product.price, contentName: product.name, contentIds: [product.id] })
+    http.post(`/products/${product.slug}/view`).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id])
 
@@ -399,10 +399,26 @@ function Gallery({ images, active, onChange, name, discount }: { images: { url: 
         </div>
       )}
       <div className="relative flex aspect-square flex-1 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/80">
-        {current ? <img src={img(current.url, 960)} alt={current.altText ?? name} className="size-full object-contain p-6" /> : <ShoppingBag className="size-16 text-slate-300" />}
+        {current ? <GalleryImage url={current.url} alt={current.altText ?? name} /> : <ShoppingBag className="size-16 text-slate-300" />}
         {discount > 0 && <span className="absolute top-4 left-4 rounded-full bg-linear-to-r from-rose-500 to-orange-500 px-3 py-1 text-sm font-bold text-white shadow-md shadow-rose-500/30">-{discount}%</span>}
       </div>
     </div>
+  )
+}
+
+/**
+ * The large product photo. When the shopper arrived from a product card, the card's smaller copy is already
+ * downloaded, so it is shown underneath until the large one has loaded instead of an empty box.
+ */
+function GalleryImage({ url, alt }: { url: string; alt: string }) {
+  const src = img(url, galleryImageWidth)
+  const [loaded, setLoaded] = useState<string>()
+  const placeholder = loaded === src ? undefined : shownCardImage(url)
+  return (
+    <>
+      {placeholder && <img src={placeholder} alt="" aria-hidden className="absolute inset-0 size-full object-contain p-6" />}
+      <img src={src} alt={alt} fetchPriority="high" onLoad={() => setLoaded(src)} className="relative size-full object-contain p-6" />
+    </>
   )
 }
 

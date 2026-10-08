@@ -14,6 +14,22 @@ export interface StoreRouteHandle {
   hideWhatsApp?: boolean
 }
 
+/**
+ * Once the first page has loaded and the browser is idle, fetches the code for the pages shoppers open next
+ * (category listings and product pages), so tapping a link doesn't wait for it to download.
+ */
+function prefetchCommonPages() {
+  const load = () => {
+    void import('@/pages/store/CatalogPages')
+    void import('@/pages/store/ProductPage')
+  }
+  // Safari has no requestIdleCallback.
+  const whenIdle = () => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(load, { timeout: 4000 }) : window.setTimeout(load, 2000))
+  if (document.readyState === 'complete') whenIdle()
+  else window.addEventListener('load', whenIdle, { once: true })
+  return () => window.removeEventListener('load', whenIdle)
+}
+
 export function StoreLayout() {
   const { data } = useBootstrap()
   const location = useLocation()
@@ -27,6 +43,8 @@ export function StoreLayout() {
   useEffect(() => {
     trackPageView()
   }, [location.pathname])
+
+  useEffect(prefetchCommonPages, [])
 
   return (
     <div className="flex min-h-dvh flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">

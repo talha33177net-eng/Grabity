@@ -2,19 +2,55 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
+using MvcJsonOptions = Microsoft.AspNetCore.Mvc.JsonOptions;
 
 namespace Grabity.Api.Services;
 
 /// <summary>
 /// Serves the built React app (wwwroot/index.html) for client-side routes, with the page title,
 /// description and Open Graph tags filled in on the server so link previews and crawlers see them.
+/// Storefront pages also carry the API responses they start with and a preload for their main image,
+/// so the browser doesn't have to run the app and call the API before it can show anything.
 /// </summary>
-public partial class SpaRenderer(IWebHostEnvironment env, IServiceScopeFactory scopes)
+public partial class SpaRenderer(IWebHostEnvironment env, IServiceScopeFactory scopes, IOptions<MvcJsonOptions> json)
 {
     private record PageMeta(string Title, string? Description, string? Image, string Type = "website", string? JsonLd = null, bool NotFound = false);
 
+    /// <summary>API responses keyed the way api.ts looks them up, and preload tags for the page's main image.</summary>
+    private sealed class PageData
+    {
+        public Dictionary<string, object> Responses { get; } = [];
+        public StringBuilder Preloads { get; } = new();
+    }
+
+    // These mirror the frontend so the embedded data and preloaded images are exactly what the page asks for:
+    // the listing request in ProductListing.tsx and the image sizes in lib/utils.ts, HomeBlocks.tsx,
+    // ProductCard.tsx, ProductPage.tsx and CatalogPages.tsx.
+    private const int ListingPageSize = 24;
+    private static readonly string[] ListingParams = ["page", "brands", "min", "max", "stock", "sort"];
+    private const int CardImageWidth = 400;
+    private const int GalleryImageWidth = 960;
+    private const int BannerFallbackWidth = 1200;
+    private static readonly int[] BannerWidths = [640, 960, 1200, 1600];
+    private static readonly int[] MobileBannerWidths = [640, 960, 1200];
+    private const string HeroSizes = "(min-width: 1440px) 920px, (min-width: 1024px) 64vw, 100vw";
+    private const string WideSizes = "(min-width: 1440px) 1380px, 100vw";
+
+    /// <summary>Lazily loaded page code, by first URL segment, as source paths in Vite's build manifest.</summary>
+    private static readonly Dictionary<string, string> RouteModules = new()
+    {
+        ["product"] = "src/pages/store/ProductPage.tsx",
+        ["category"] = "src/pages/store/CatalogPages.tsx",
+        ["brand"] = "src/pages/store/CatalogPages.tsx",
+    };
+
+    private sealed record ManifestChunk(string File, string[]? Imports);
+
     private string? _template;
     private DateTime _templateStamp;
+    private Dictionary<string, ManifestChunk>? _manifest;
+    private DateTime _manifestStamp;
     private readonly Lock _gate = new();
 
     public async Task<IResult> RenderAsync(HttpContext ctx, CancellationToken ct)
@@ -38,11 +74,158 @@ public partial class SpaRenderer(IWebHostEnvironment env, IServiceScopeFactory s
         var settings = await scope.ServiceProvider.GetRequiredService<SettingsService>().GetAsync(ct);
         var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
         var meta = await ResolveAsync(path, db, settings, baseUrl, ct);
+        var storefront = !meta.NotFound && !path.StartsWith("/admin", StringComparison.OrdinalIgnoreCase);
+        var page = storefront ? await CollectAsync(path, ctx.Request.Query, scope.ServiceProvider, ct) : new PageData();
+        if (storefront) PreloadRouteModule(page, path);
 
-        var html = Inject(template, meta, settings, baseUrl + path);
+        var html = Inject(template, meta, settings, baseUrl + path, page);
         ctx.Response.Headers.CacheControl = "no-cache";
         return Results.Content(html, "text/html; charset=utf-8", Encoding.UTF8, meta.NotFound ? 404 : 200);
     }
+
+    private static async Task<PageData> CollectAsync(string path, IQueryCollection query, IServiceProvider services, CancellationToken ct)
+    {
+        var storefront = services.GetRequiredService<StorefrontService>();
+        var page = new PageData();
+        page.Responses["/api/store/bootstrap"] = await storefront.GetBootstrapAsync(ct);
+
+        var segments = path.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0)
+        {
+            var home = await services.GetRequiredService<HomeService>().GetAsync(ct);
+            page.Responses["/api/store/home"] = home;
+            if (home.HeroSlides.FirstOrDefault() is { } slide)
+            {
+                // HeroSlider shows the mobile image through <source media="(max-width: 640px)">.
+                var sizes = home.SideBanners.Count > 0 ? HeroSizes : WideSizes;
+                if (slide.MobileImageUrl is { } mobile)
+                {
+                    PreloadImage(page, mobile, MobileBannerWidths, "100vw", "(max-width: 640px)");
+                    PreloadImage(page, slide.ImageUrl, BannerWidths, sizes, "(min-width: 641px)");
+                }
+                else PreloadImage(page, slide.ImageUrl, BannerWidths, sizes);
+            }
+            return page;
+        }
+        if (segments.Length != 2) return page;
+
+        var slug = Uri.UnescapeDataString(segments[1]);
+        var defaultListing = !ListingParams.Any(query.ContainsKey);
+        switch (segments[0])
+        {
+            case "product":
+            {
+                var product = await storefront.GetProductAsync(slug, ct);
+                if (product is null) break;
+                page.Responses[$"/api/products/{slug}"] = product;
+                // ProductPage opens on the first in-stock variant's image when it has one.
+                var variant = product.Variants.FirstOrDefault(v => v.InStock) ?? product.Variants.FirstOrDefault();
+                var image = product.Images.FirstOrDefault(i => i.Url == variant?.ImageUrl) ?? product.Images.FirstOrDefault();
+                if (image is not null) PreloadImage(page, image.Url, GalleryImageWidth);
+                break;
+            }
+            case "category":
+            {
+                var category = await storefront.GetCategoryAsync(slug, ct);
+                if (category is null) break;
+                page.Responses[$"/api/categories/{slug}"] = category;
+                var listing = defaultListing ? await AddListingAsync(page, services, ("category", slug), ct) : null;
+                if (category.BannerUrl is { } banner) PreloadImage(page, banner, BannerWidths, WideSizes);
+                else if (listing is not null) PreloadCards(page, listing);
+                break;
+            }
+            case "brand":
+            {
+                var brand = await storefront.GetBrandAsync(slug, ct);
+                if (brand is null) break;
+                page.Responses[$"/api/brands/{slug}"] = brand;
+                if (defaultListing && await AddListingAsync(page, services, ("brand", slug), ct) is { } listing) PreloadCards(page, listing);
+                break;
+            }
+        }
+        return page;
+    }
+
+    /// <summary>Embeds the first page of a category or brand listing, as ProductListing.tsx requests it with no filters.</summary>
+    private static async Task<ProductListDto> AddListingAsync(PageData page, IServiceProvider services, (string Name, string Slug) scope, CancellationToken ct)
+    {
+        var query = new ProductListQuery { PageSize = ListingPageSize, Facets = true };
+        if (scope.Name == "category") query.Category = scope.Slug;
+        else query.Brand = scope.Slug;
+        var listing = await services.GetRequiredService<ProductQueries>().ListAsync(query, ct);
+        // Keys list the query parameters sorted by name, the way api.ts normalizes them.
+        page.Responses[$"/api/products?{scope.Name}={scope.Slug}&facets=true&page=1&pageSize={ListingPageSize}"] = listing;
+        return listing;
+    }
+
+    /// <summary>The first row of product cards on a phone, which is what fills the screen.</summary>
+    private static void PreloadCards(PageData page, ProductListDto listing)
+    {
+        foreach (var url in listing.Products.Items.Take(2).Select(p => p.ImageUrl).OfType<string>().Distinct())
+            PreloadImage(page, url, CardImageWidth);
+    }
+
+    private static void PreloadImage(PageData page, string url, int width) =>
+        page.Preloads.Append($"<link rel=\"preload\" as=\"image\" href=\"{WebUtility.HtmlEncode(Sized(url, width))}\" fetchpriority=\"high\">");
+
+    private static void PreloadImage(PageData page, string url, int[] widths, string sizes, string? media = null)
+    {
+        var e = (string s) => WebUtility.HtmlEncode(s);
+        page.Preloads.Append($"<link rel=\"preload\" as=\"image\" href=\"{e(Sized(url, BannerFallbackWidth))}\"");
+        if (IsResizable(url))
+            page.Preloads.Append($" imagesrcset=\"{e(string.Join(", ", widths.Select(w => $"{Sized(url, w)} {w}w")))}\" imagesizes=\"{e(sizes)}\"");
+        if (media is not null) page.Preloads.Append($" media=\"{e(media)}\"");
+        page.Preloads.Append(" fetchpriority=\"high\">");
+    }
+
+    /// <summary>
+    /// Starts downloading the page's lazily loaded code with the main bundle, instead of after the main bundle
+    /// has run and asked for it.
+    /// </summary>
+    private void PreloadRouteModule(PageData page, string path)
+    {
+        var segment = path.Trim('/').Split('/')[0];
+        if (!RouteModules.TryGetValue(segment, out var source) || LoadManifest() is not { } manifest) return;
+        var inHtml = Reachable(manifest, "index.html");
+        foreach (var key in Reachable(manifest, source).Except(inHtml))
+            page.Preloads.Append($"<link rel=\"modulepreload\" crossorigin href=\"/{WebUtility.HtmlEncode(manifest[key].File)}\">");
+    }
+
+    /// <summary>A manifest chunk and every chunk it statically imports.</summary>
+    private static HashSet<string> Reachable(Dictionary<string, ManifestChunk> manifest, string start)
+    {
+        var seen = new HashSet<string>();
+        var pending = new Stack<string>([start]);
+        while (pending.TryPop(out var key))
+        {
+            if (!manifest.TryGetValue(key, out var chunk) || !seen.Add(key)) continue;
+            foreach (var import in chunk.Imports ?? []) pending.Push(import);
+        }
+        return seen;
+    }
+
+    private Dictionary<string, ManifestChunk>? LoadManifest()
+    {
+        var file = Path.Combine(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"), "vite-manifest.json");
+        if (!File.Exists(file)) return null;
+        var stamp = File.GetLastWriteTimeUtc(file);
+        lock (_gate)
+        {
+            if (_manifest is null || stamp != _manifestStamp)
+            {
+                _manifest = JsonSerializer.Deserialize<Dictionary<string, ManifestChunk>>(File.ReadAllText(file), JsonSerializerOptions.Web);
+                _manifestStamp = stamp;
+            }
+            return _manifest;
+        }
+    }
+
+    // Same rules as img() in frontend/src/lib/utils.ts: only uploaded raster images have resized copies.
+    private static bool IsResizable(string url) =>
+        url.StartsWith(MediaStorage.RequestPath + "/", StringComparison.OrdinalIgnoreCase) &&
+        !url.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) && !url.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
+
+    private static string Sized(string url, int width) => IsResizable(url) ? $"{url}?w={width}" : url;
 
     public IResult RobotsTxt(HttpContext ctx)
     {
@@ -173,7 +356,7 @@ public partial class SpaRenderer(IWebHostEnvironment env, IServiceScopeFactory s
         }
     }
 
-    private static string Inject(string template, PageMeta meta, StoreSettings settings, string url)
+    private string Inject(string template, PageMeta meta, StoreSettings settings, string url, PageData page)
     {
         var baseUrl = new Uri(url).GetLeftPart(UriPartial.Authority);
         var e = (string? s) => WebUtility.HtmlEncode(s ?? "");
@@ -207,7 +390,21 @@ public partial class SpaRenderer(IWebHostEnvironment env, IServiceScopeFactory s
             tags.Append($"<style>:root{{--brand:{settings.General.PrimaryColor}}}</style>");
             html = ThemeColorTag().Replace(html, $"<meta name=\"theme-color\" content=\"{settings.General.PrimaryColor}\"", 1);
         }
-        return html.Replace("</head>", tags + "</head>");
+        html = html.Replace("</head>", tags + "</head>");
+
+        if (page.Preloads.Length > 0)
+        {
+            // Ahead of the scripts, so the main image downloads while the app is still loading.
+            var scripts = html.IndexOf("<script", StringComparison.OrdinalIgnoreCase);
+            html = html.Insert(scripts >= 0 ? scripts : html.IndexOf("</head>", StringComparison.Ordinal), page.Preloads.ToString());
+        }
+        if (page.Responses.Count > 0)
+        {
+            // JSON can't contain "<" outside strings, so escaping it keeps "</script>" in any text from ending the tag.
+            var data = JsonSerializer.Serialize(page.Responses, json.Value.JsonSerializerOptions).Replace("<", "\\u003c");
+            html = html.Replace("</body>", $"<script id=\"grabity-data\" type=\"application/json\">{data}</script></body>");
+        }
+        return html;
     }
 
     private string? LoadTemplate()

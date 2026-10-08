@@ -7,7 +7,7 @@ import { DynamicIcon } from '@/components/ui/Icons'
 import { Stars } from '@/components/ui/Misc'
 import { formatDate } from '@/lib/format'
 import type { Banner, BlogCard, Brand, CategoryCard, ReviewCard } from '@/lib/types'
-import { cn, img, initials } from '@/lib/utils'
+import { bannerFallbackWidth, bannerWidths, cn, img, initials, mobileBannerWidths, srcSet } from '@/lib/utils'
 
 function BannerLink({ banner, className, children }: { banner: Banner; className?: string; children: ReactNode }) {
   return banner.linkUrl ? (
@@ -19,7 +19,7 @@ function BannerLink({ banner, className, children }: { banner: Banner; className
   )
 }
 
-export function HeroSlider({ slides }: { slides: Banner[] }) {
+export function HeroSlider({ slides, sizes }: { slides: Banner[]; sizes: string }) {
   const [emblaRef, embla] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 5500, stopOnInteraction: false, stopOnMouseEnter: true })])
   const [selected, setSelected] = useState(0)
 
@@ -44,9 +44,13 @@ export function HeroSlider({ slides }: { slides: Banner[] }) {
           {slides.map((slide, index) => (
             <BannerLink key={slide.id} banner={slide} className="relative block min-w-0 flex-[0_0_100%]">
               <picture>
-                {slide.mobileImageUrl && <source media="(max-width: 640px)" srcSet={img(slide.mobileImageUrl, 800)} />}
+                {slide.mobileImageUrl && (
+                  <source media="(max-width: 640px)" srcSet={srcSet(slide.mobileImageUrl, mobileBannerWidths) ?? slide.mobileImageUrl} sizes="100vw" />
+                )}
                 <img
-                  src={img(slide.imageUrl, 1280)}
+                  src={img(slide.imageUrl, bannerFallbackWidth)}
+                  srcSet={srcSet(slide.imageUrl, bannerWidths)}
+                  sizes={sizes}
                   alt={slide.title ?? ''}
                   className="aspect-[2.13/1] w-full object-cover"
                   loading={index === 0 ? 'eager' : 'lazy'}

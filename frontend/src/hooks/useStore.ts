@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { http } from '@/lib/api'
+import { embeddedResponse, http } from '@/lib/api'
 import { setCurrencySymbol } from '@/lib/format'
-import type { Bootstrap, StoreSettings, User } from '@/lib/types'
+import type { Bootstrap, Home, StoreSettings, User } from '@/lib/types'
 
 export const bootstrapKey = ['bootstrap'] as const
 
@@ -10,7 +10,18 @@ export function useBootstrap() {
   return useQuery({
     queryKey: bootstrapKey,
     queryFn: () => http.get<Bootstrap>('/store/bootstrap'),
+    initialData: () => embeddedResponse<Bootstrap>('/store/bootstrap'),
     staleTime: 5 * 60_000,
+  })
+}
+
+/** Homepage content; also read by the promo popup. */
+export function useHome() {
+  return useQuery({
+    queryKey: ['home'],
+    queryFn: () => http.get<Home>('/store/home'),
+    initialData: () => embeddedResponse<Home>('/store/home'),
+    staleTime: 60_000,
   })
 }
 

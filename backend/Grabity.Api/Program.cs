@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Grabity.Api.Controllers.Admin;
@@ -72,7 +73,12 @@ builder.Services.AddResponseCompression(o =>
     o.EnableForHttps = true;
     o.Providers.Add<BrotliCompressionProvider>();
     o.Providers.Add<GzipCompressionProvider>();
+    o.MimeTypes = ResponseCompressionDefaults.MimeTypes.Append("image/svg+xml");
 });
+// Pages and API responses are compressed per request; "Optimal" is noticeably smaller than the default "Fastest"
+// for little extra CPU. Built scripts and styles are compressed ahead of time (PrecompressedAssetsMiddleware).
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Optimal);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Optimal);
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
 
@@ -90,6 +96,7 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddSingleton<HtmlCleaner>();
 builder.Services.AddSingleton<MediaStorage>();
+builder.Services.AddHostedService<MediaVariantWarmer>();
 builder.Services.AddSingleton<CatalogCache>();
 builder.Services.AddSingleton<SpaRenderer>();
 builder.Services.AddScoped<SettingsService>();
@@ -98,6 +105,7 @@ builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<PricingService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<HomeService>();
+builder.Services.AddScoped<StorefrontService>();
 builder.Services.AddScoped<DataSeeder>();
 
 // Email: events queue rows in EmailMessages, EmailDispatcher sends them in the background.
@@ -128,13 +136,17 @@ app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = media.FileProvider,
     RequestPath = MediaStorage.RequestPath,
-    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public, max-age=2592000",
+    // Uploads get a new random file name every time, so a URL's content never changes.
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable",
 });
+app.UseMiddleware<PrecompressedAssetsMiddleware>();
 app.UseStaticFiles(new StaticFileOptions
 {
+    ContentTypeProvider = new PrecompressedContentTypes(),
     // Vite fingerprints everything under /assets, so it can be cached forever.
     OnPrepareResponse = ctx =>
     {
+        PrecompressedContentTypes.Apply(ctx);
         if (ctx.Context.Request.Path.StartsWithSegments("/assets"))
             ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
     },

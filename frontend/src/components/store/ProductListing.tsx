@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/Feedback'
 import { Checkbox, Select } from '@/components/ui/Form'
 import { Pagination } from '@/components/ui/Misc'
 import { Drawer } from '@/components/ui/Overlay'
-import { http } from '@/lib/api'
+import { embeddedResponse, http } from '@/lib/api'
 import { money } from '@/lib/format'
 import type { CategoryCard, ProductFacets, ProductList } from '@/lib/types'
 import { cn, img } from '@/lib/utils'
@@ -47,24 +47,26 @@ export function ProductListing({ scope, showBrandFilter = true, subcategories = 
   const inStock = params.get('stock') === '1'
   const sort = params.get('sort') ?? ''
 
+  // SpaRenderer.cs embeds the unfiltered first page of category and brand listings, asked for exactly like this.
+  const request = {
+    category: scope.category,
+    brand: scope.brand,
+    q: scope.q,
+    onSale: scope.onSale,
+    featured: scope.featured,
+    brands: selectedBrands.join(','),
+    minPrice: min,
+    maxPrice: max,
+    inStock,
+    sort,
+    page,
+    pageSize: 24,
+    facets: true,
+  }
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['products', scope, selectedBrands, min, max, inStock, sort, page],
-    queryFn: () =>
-      http.get<ProductList>('/products', {
-        category: scope.category,
-        brand: scope.brand,
-        q: scope.q,
-        onSale: scope.onSale,
-        featured: scope.featured,
-        brands: selectedBrands.join(','),
-        minPrice: min,
-        maxPrice: max,
-        inStock,
-        sort,
-        page,
-        pageSize: 24,
-        facets: true,
-      }),
+    queryFn: () => http.get<ProductList>('/products', request),
+    initialData: () => embeddedResponse<ProductList>('/products', request),
     placeholderData: keepPreviousData,
   })
 
@@ -183,8 +185,8 @@ export function ProductListing({ scope, showBrandFilter = true, subcategories = 
         ) : products && products.items.length > 0 ? (
           <>
             <div className={cn(productGridClass.replace('xl:grid-cols-5', 'xl:grid-cols-4'), 'transition-opacity', isFetching && 'opacity-60')}>
-              {products.items.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {products.items.map((product, index) => (
+                <ProductCard key={product.id} product={product} priority={index < 4} />
               ))}
             </div>
             <Pagination className="mt-8" page={products.page} totalPages={products.totalPages} onChange={(p) => update({ page: String(p) })} />

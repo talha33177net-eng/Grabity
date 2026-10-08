@@ -7,9 +7,9 @@ import { Breadcrumbs, categoryCrumbs, RichContent } from '@/components/store/Sec
 import { DynamicIcon } from '@/components/ui/Icons'
 import { PageLoader, Skeleton } from '@/components/ui/Feedback'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
-import { ApiError, http } from '@/lib/api'
+import { ApiError, embeddedResponse, http } from '@/lib/api'
 import type { Brand, CategoryGroup, CategoryPage as Category } from '@/lib/types'
-import { img } from '@/lib/utils'
+import { bannerFallbackWidth, bannerWidths, img, srcSet, wideSizes } from '@/lib/utils'
 import { NotFoundPage } from './NotFoundPage'
 
 function PageTitle({ title, description, count }: { title: string; description?: string | null; count?: number }) {
@@ -24,35 +24,59 @@ function PageTitle({ title, description, count }: { title: string; description?:
   )
 }
 
+/** Placeholder for a page heading whose data is still loading; the product listing below loads at the same time. */
+function HeadingSkeleton() {
+  return (
+    <div className="mb-6">
+      <Skeleton className="mb-4 h-4 w-40" />
+      <Skeleton className="h-8 w-60" />
+    </div>
+  )
+}
+
 export function CategoryPage() {
   const { slug = '' } = useParams()
-  const { data: category, error, isLoading } = useQuery({
+  const { data: category, error } = useQuery({
     queryKey: ['category', slug],
     queryFn: () => http.get<Category>(`/categories/${slug}`),
+    initialData: () => embeddedResponse<Category>(`/categories/${slug}`),
   })
   useDocumentMeta({ title: category?.metaTitle ?? category?.name, description: category?.metaDescription ?? category?.description, image: category?.bannerUrl ?? category?.imageUrl })
 
   if (error instanceof ApiError && error.status === 404) return <NotFoundPage title="Category not found" />
-  if (isLoading || !category) return <PageLoader />
 
-  const crumbs = categoryCrumbs(category.breadcrumbs.slice(0, -1))
   return (
     <div className="container-x pt-4 sm:pt-6">
-      {category.bannerUrl && <img src={img(category.bannerUrl, 1440)} alt={category.name} className="mb-5 aspect-[4/1] w-full rounded-3xl object-cover" />}
-      <Breadcrumbs items={crumbs} current={category.name} className="mb-4" />
-      <PageTitle title={category.name} description={category.description} />
-      {category.children.length > 0 && (
-        <div className="scrollbar-none -mx-4 mb-6 flex gap-3 overflow-x-auto px-4 lg:hidden">
-          {category.children.map((child) => (
-            <Link key={child.id} to={`/category/${child.slug}`} className="flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pr-4 pl-1.5 text-sm font-medium text-slate-700">
-              {child.imageUrl && <img src={img(child.imageUrl, 64)} alt="" className="size-7 rounded-full object-cover" />}
-              {child.name}
-            </Link>
-          ))}
-        </div>
+      {category ? (
+        <>
+          {category.bannerUrl && (
+            <img
+              src={img(category.bannerUrl, bannerFallbackWidth)}
+              srcSet={srcSet(category.bannerUrl, bannerWidths)}
+              sizes={wideSizes}
+              alt={category.name}
+              className="mb-5 aspect-[4/1] w-full rounded-3xl object-cover"
+              fetchPriority="high"
+            />
+          )}
+          <Breadcrumbs items={categoryCrumbs(category.breadcrumbs.slice(0, -1))} current={category.name} className="mb-4" />
+          <PageTitle title={category.name} description={category.description} />
+          {category.children.length > 0 && (
+            <div className="scrollbar-none -mx-4 mb-6 flex gap-3 overflow-x-auto px-4 lg:hidden">
+              {category.children.map((child) => (
+                <Link key={child.id} to={`/category/${child.slug}`} className="flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pr-4 pl-1.5 text-sm font-medium text-slate-700">
+                  {child.imageUrl && <img src={img(child.imageUrl, 64)} alt="" className="size-7 rounded-full object-cover" />}
+                  {child.name}
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <HeadingSkeleton />
       )}
-      <ProductListing scope={{ category: slug }} subcategories={category.children} />
-      {category.seoContent && (
+      <ProductListing scope={{ category: slug }} subcategories={category?.children} />
+      {category?.seoContent && (
         <section className="mt-12 rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-10">
           <RichContent html={category.seoContent} />
         </section>
@@ -63,26 +87,35 @@ export function CategoryPage() {
 
 export function BrandPage() {
   const { slug = '' } = useParams()
-  const { data: brand, error, isLoading } = useQuery({ queryKey: ['brand', slug], queryFn: () => http.get<Brand>(`/brands/${slug}`) })
+  const { data: brand, error } = useQuery({
+    queryKey: ['brand', slug],
+    queryFn: () => http.get<Brand>(`/brands/${slug}`),
+    initialData: () => embeddedResponse<Brand>(`/brands/${slug}`),
+  })
   useDocumentMeta({ title: brand?.metaTitle ?? (brand ? `${brand.name} products` : undefined), description: brand?.metaDescription ?? brand?.description, image: brand?.logoUrl })
 
   if (error instanceof ApiError && error.status === 404) return <NotFoundPage title="Brand not found" />
-  if (isLoading || !brand) return <PageLoader />
 
   return (
     <div className="container-x pt-4 sm:pt-6">
-      <Breadcrumbs items={[{ name: 'Brands', to: '/brands' }]} current={brand.name} className="mb-4" />
-      <div className="mb-6 flex items-center gap-4 rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-        {brand.logoUrl && (
-          <div className="flex h-16 w-32 shrink-0 items-center justify-center rounded-2xl bg-slate-50 p-3">
-            <img src={img(brand.logoUrl, 240)} alt={brand.name} className="max-h-full max-w-full object-contain" />
+      {brand ? (
+        <>
+          <Breadcrumbs items={[{ name: 'Brands', to: '/brands' }]} current={brand.name} className="mb-4" />
+          <div className="mb-6 flex items-center gap-4 rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
+            {brand.logoUrl && (
+              <div className="flex h-16 w-32 shrink-0 items-center justify-center rounded-2xl bg-slate-50 p-3">
+                <img src={img(brand.logoUrl, 240)} alt={brand.name} className="max-h-full max-w-full object-contain" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{brand.name}</h1>
+              {brand.description && <p className="mt-1 text-sm text-slate-500">{brand.description}</p>}
+            </div>
           </div>
-        )}
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{brand.name}</h1>
-          {brand.description && <p className="mt-1 text-sm text-slate-500">{brand.description}</p>}
-        </div>
-      </div>
+        </>
+      ) : (
+        <HeadingSkeleton />
+      )}
       <ProductListing scope={{ brand: slug }} showBrandFilter={false} />
     </div>
   )

@@ -8,9 +8,29 @@ export function cn(...inputs: ClassValue[]) {
 /** Image URL for uploaded media at a given display width. SVG/GIF and external images are returned as-is. */
 export function img(url: string | null | undefined, width?: number): string | undefined {
   if (!url) return undefined
-  if (!width || !url.startsWith('/uploads/') || /\.(svg|gif)$/i.test(url)) return url
+  if (!width || !isResizable(url)) return url
   return `${url}?w=${width}`
 }
+
+/** `srcset` offering the given widths of an uploaded image; undefined when the image has no resized copies. */
+export function srcSet(url: string | null | undefined, widths: readonly number[]): string | undefined {
+  if (!url || !isResizable(url)) return undefined
+  return widths.map((width) => `${url}?w=${width} ${width}w`).join(', ')
+}
+
+function isResizable(url: string) {
+  return url.startsWith('/uploads/') && !/\.(svg|gif)$/i.test(url)
+}
+
+// Banner sizes. SpaRenderer.cs preloads the first banner with these same values, and MediaStorage.cs
+// makes these widths at upload time, so keep all three in step.
+export const bannerWidths = [640, 960, 1200, 1600] as const
+export const mobileBannerWidths = [640, 960, 1200] as const
+export const bannerFallbackWidth = 1200
+/** Hero slider next to the side banners: two thirds of the 1440px container on desktop. */
+export const heroSizes = '(min-width: 1440px) 920px, (min-width: 1024px) 64vw, 100vw'
+/** Full container width. */
+export const wideSizes = '(min-width: 1440px) 1380px, 100vw'
 
 export function discountPercent(price: number, compareAt?: number | null): number {
   if (!compareAt || compareAt <= price) return 0

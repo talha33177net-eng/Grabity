@@ -118,7 +118,29 @@ they are edited in the admin panel under Store settings.
 
 **Back up** the database, the `uploads/` folder (all product and banner images) and `App_Data/` (without the
 keys in it, everyone gets signed out). When redeploying, copy the new build over the old one without deleting
-those folders, or set `Media:Root` to a folder outside the site.
+those folders, or set `Media:Root` to a folder outside the site. `uploads/.cache` (resized copies of the images)
+can be left out of backups; missing sizes are made again in the background when the app starts.
+
+### Speed
+
+The site is built to load quickly on phones over mobile data:
+
+- Each storefront page arrives with the data it starts with (settings, menu, homepage, product, category
+  listing) already embedded, plus hints that start downloading its main image and page code straight away.
+- Uploaded photos are stored as WebP, and the sizes the storefront shows are made at upload time, so no
+  shopper waits for a resize. Images, scripts and styles are cached by browsers for a year.
+- `npm run build` writes Brotli/gzip-compressed copies of the scripts and styles, plus `vite-manifest.json`;
+  deploy them together with the rest of `wwwroot`.
+
+For the best results when the site is live:
+
+- **Host it close to your customers.** A server in Singapore or Mumbai is much closer to Bangladesh than one in
+  Europe or the US, and every request crosses that distance.
+- **Put Cloudflare (free plan) in front of it.** It has servers in Dhaka that keep copies of the images, scripts
+  and styles, and it serves everything over HTTP/2 or HTTP/3. Keep its default caching; the site already marks
+  what can be cached.
+- **Upload good photos, not huge ones.** Anything up to 10 MB is accepted and shrunk automatically, but a clean
+  1500–2000 px product photo on a plain background looks best and keeps uploads quick.
 
 ### First things to set up in the admin panel
 

@@ -32,10 +32,64 @@ export function buildQuery(query?: Query): string {
   return text ? `?${text}` : ''
 }
 
+/**
+ * API responses the server embedded in the page (SpaRenderer.cs), so the first render doesn't wait for
+ * requests it already knows the answer to. Keyed by URL with query parameters sorted by name.
+ */
+const embedded = readEmbedded()
+const embeddedFreshFor = 30_000
+
+function readEmbedded(): Map<string, unknown> {
+  const element = typeof document === 'undefined' ? null : document.getElementById('grabity-data')
+  if (!element?.textContent) return new Map()
+  try {
+    return new Map(Object.entries(JSON.parse(element.textContent) as Record<string, unknown>))
+  } catch {
+    return new Map()
+  } finally {
+    element.remove()
+  }
+}
+
+function embeddedKey(url: string): string {
+  const [path, search = ''] = url.split('?')
+  const params = [...new URLSearchParams(search)].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+  return params.length ? `${path}?${params.map(([key, value]) => `${key}=${value}`).join('&')}` : path!
+}
+
+/** Hands out an embedded response once; later requests for the same URL go to the server for fresh data. */
+function takeEmbedded(url: string): { found: boolean; data?: unknown } {
+  if (embedded.size === 0) return { found: false }
+  if (performance.now() > embeddedFreshFor) {
+    embedded.clear()
+    return { found: false }
+  }
+  const key = embeddedKey(url)
+  if (!embedded.has(key)) return { found: false }
+  const data = embedded.get(key)
+  embedded.delete(key)
+  return { found: true, data }
+}
+
+/**
+ * The embedded response for a GET request, for a query's `initialData`: the very first render then already
+ * has the data, rather than rendering empty and again a moment later (which can also shift the layout).
+ */
+export function embeddedResponse<T>(path: string, query?: Query): T | undefined {
+  const hit = takeEmbedded(`/api${path}${buildQuery(query)}`)
+  return hit.found ? (hit.data as T) : undefined
+}
+
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, query, signal } = options
+  const url = `/api${path}${buildQuery(query)}`
+  if (method === 'GET') {
+    const hit = takeEmbedded(url)
+    if (hit.found) return hit.data as T
+  }
+
   const isForm = body instanceof FormData
-  const response = await fetch(`/api${path}${buildQuery(query)}`, {
+  const response = await fetch(url, {
     method,
     signal,
     credentials: 'same-origin',

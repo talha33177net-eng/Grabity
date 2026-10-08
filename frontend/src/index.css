@@ -7,7 +7,27 @@
  */
 :root {
   --brand: #0ea5e9;
-  --font-sans: 'Inter Variable', 'Hind Siliguri', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter Variable', 'Taka', 'Hind Siliguri', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/*
+ * Just the ৳ sign from Hind Siliguri (SIL Open Font License 1.1), a few KB. It sits ahead of Hind Siliguri so
+ * prices don't make every page download the whole ~70 KB Bengali font per weight; that still loads when the
+ * page has Bangla text.
+ */
+@font-face {
+  font-family: 'Taka';
+  src: url('./assets/fonts/taka-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+09F3;
+}
+@font-face {
+  font-family: 'Taka';
+  src: url('./assets/fonts/taka-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+09F3;
 }
 
 @theme inline {

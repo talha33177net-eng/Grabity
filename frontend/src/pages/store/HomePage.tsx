@@ -1,25 +1,54 @@
-import { useQuery } from '@tanstack/react-query'
 import { ArrowRight } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { BlogCardView, BrandMarquee, CategoryTiles, FeatureStrip, HeroSlider, ReviewCardView, SideBanners } from '@/components/store/HomeBlocks'
 import { ProductCardSkeleton } from '@/components/store/ProductCard'
 import { ProductRail, RichContent, SectionHeader } from '@/components/store/Sections'
 import { Skeleton } from '@/components/ui/Feedback'
 import { useDocumentMeta } from '@/hooks/useDocumentMeta'
-import { useSettings } from '@/hooks/useStore'
-import { http } from '@/lib/api'
-import type { Home, HomeSection } from '@/lib/types'
-import { cn, img } from '@/lib/utils'
+import { useHome, useSettings } from '@/hooks/useStore'
+import type { HomeSection } from '@/lib/types'
+import { cn, heroSizes, img, wideSizes } from '@/lib/utils'
+
+/** Sections rendered with the hero on a fresh visit; the rest follow right after the first paint. */
+const FIRST_PAINT_SECTIONS = 2
+let deferBelowFold = typeof performance !== 'undefined' && (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'navigate'
+
+/**
+ * The full homepage is a few thousand elements, which takes a phone a second or more to lay out. On a fresh
+ * visit the top of the page is shown first and the sections further down are added straight after. Only the
+ * first homepage render on a fresh visit does this: reloads, Back and later visits render everything at once
+ * so the scroll position can be restored.
+ */
+function useBelowFoldReady(contentLoaded: boolean) {
+  const [ready, setReady] = useState(!deferBelowFold)
+  useEffect(() => {
+    deferBelowFold = false
+  }, [])
+  useEffect(() => {
+    if (ready || !contentLoaded) return
+    // requestAnimationFrame runs just before the next paint; the timeout then lands just after it.
+    let timer: number | undefined
+    const frame = requestAnimationFrame(() => (timer = window.setTimeout(() => setReady(true))))
+    return () => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+    }
+  }, [ready, contentLoaded])
+  return ready
+}
 
 export default function HomePage() {
   const settings = useSettings()
-  const { data: home, isLoading } = useQuery({ queryKey: ['home'], queryFn: () => http.get<Home>('/store/home'), staleTime: 60_000 })
+  const { data: home, isLoading } = useHome()
   useDocumentMeta({ title: settings?.seo.metaTitle ?? settings?.general.storeName, rawTitle: true })
+  const belowFoldReady = useBelowFoldReady(!!home)
 
   // Category and brand rows get a showcase panel; alternating its style keeps a rhythm down the page.
   let showcases = 0
-  const sections = (home?.sections ?? []).map((section) => ({ section, showcase: isShowcase(section) ? showcases++ : null }))
+  const sections = (home?.sections ?? [])
+    .map((section) => ({ section, showcase: isShowcase(section) ? showcases++ : null }))
+    .slice(0, belowFoldReady ? undefined : FIRST_PAINT_SECTIONS)
 
   return (
     <div className="space-y-14 pb-4 sm:space-y-20">
@@ -37,7 +66,7 @@ export default function HomePage() {
           ) : (
             <div className={cn('grid gap-3 sm:gap-4', home.sideBanners.length > 0 && 'lg:grid-cols-3')}>
               <div className="lg:col-span-2">
-                <HeroSlider slides={home.heroSlides} />
+                <HeroSlider slides={home.heroSlides} sizes={home.sideBanners.length > 0 ? heroSizes : wideSizes} />
               </div>
               <SideBanners banners={home.sideBanners} />
             </div>
